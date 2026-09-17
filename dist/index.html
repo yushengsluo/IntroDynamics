@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dynamics — Linear Systems Lab</title>
+  <meta name="description" content="An interactive lab for 2D and 3D linear differential equations. Edit a matrix, explore phase portraits, and follow solutions through time.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230e1b2b'/%3E%3Cpath d='M8 29L18 10h5l9 19h-6l-6-13-6 13z' fill='%235de1c0'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="app-header"><div class="brand"><span class="brand-mark">∿</span><strong>Dynamics</strong><span class="brand-divider"></span><span class="brand-subtitle">Linear systems lab</span></div><button id="guide-button" class="quiet-button"><span aria-hidden="true">ⓘ</span> How to explore</button></header>
+  <div class="workspace">
+    <aside class="sidebar">
+      <div class="section-heading"><span class="eyebrow">YOUR SYSTEM</span><span class="tiny-label">x′ = Ax</span></div>
+      <div class="dimension-control" role="group" aria-label="System dimension"><button id="dim-2" class="selected" aria-pressed="true">2D system</button><button id="dim-3" aria-pressed="false">3D system</button></div>
+      <label class="field-label" for="preset">Start with a preset</label>
+      <select id="preset"><option value="spiral">Stable spiral</option><option value="saddle">Saddle</option><option value="center">Center / rotation</option><option value="node">Stable node</option><option value="source">Unstable spiral</option><option value="degenerate">Shear / repeated eigenvalue</option><option value="custom">Custom system</option></select>
+      <section class="control-section"><div class="section-heading"><h2>System matrix</h2><span class="tiny-label">A</span></div><div id="matrix" class="matrix-editor"></div><div id="equations" class="equations"></div><p id="matrix-error" class="error-message" role="status"></p></section>
+      <section class="control-section"><div class="section-heading"><h2>Initial conditions</h2><span class="tiny-label">t = 0</span></div><div id="initials"></div><button id="add-trajectory" class="add-button"><span aria-hidden="true">+</span> Add trajectory</button><p id="seed-hint" class="hint">Or click anywhere on the phase portrait.</p></section>
+      <section class="control-section"><div class="section-heading"><h2>View options</h2></div><label class="toggle-row"><span>Vector field</span><input id="field-toggle" type="checkbox" role="switch" checked></label><label class="toggle-row"><span>Grid & axes</span><input id="grid-toggle" type="checkbox" role="switch" checked></label><label class="toggle-row"><span>Show full paths</span><input id="paths-toggle" type="checkbox" role="switch" checked></label></section>
+      <div class="sidebar-footer"><span class="small-math">d<strong>x</strong>/dt = A<strong>x</strong></span><span>Homogeneous · constant coefficients</span></div>
+    </aside>
+    <main>
+      <div class="main-heading"><div><div class="eyebrow">PHASE SPACE EXPLORER</div><h1 id="system-title">Stable spiral</h1></div><span id="stability-badge" class="badge stable"><span></span> Asymptotically stable</span></div>
+      <section class="portrait-card" aria-label="Phase portrait">
+        <div class="plot-topbar"><div class="plot-title"><span class="plot-icon">↗</span> Phase portrait <span id="dimension-label" class="plot-meta">2 dimensions</span></div><div class="plot-actions"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">−</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">+</button><span class="action-divider"></span><button id="reset-view" class="icon-button" aria-label="Reset view" title="Reset view">⌖</button></div></div>
+        <div class="canvas-wrap"><canvas id="phase-canvas" tabindex="0" aria-label="Phase portrait. In 2D, click to add a trajectory. In 3D, drag to rotate. Use plus and minus keys to zoom."></canvas><div id="plot-hint" class="plot-hint"><span class="hint-cross">+</span> Click to add a trajectory</div><div class="axis-caption" id="axis-caption">x₁ · x₂</div></div>
+        <div class="playback"><button id="play" class="play-button" aria-label="Play animation">▶</button><button id="restart" class="icon-button" aria-label="Restart animation" title="Restart animation">↺</button><span id="time-label" class="time-label">t = 0.00</span><input id="timeline" type="range" min="0" max="12" value="0" step="0.01" aria-label="Simulation time"><label class="duration-label">T <input id="duration" type="number" value="12" min="1" max="30" step="1" aria-label="Time horizon"></label><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select></div>
+      </section>
+      <div class="bottom-panels"><section class="panel time-panel"><div class="panel-heading"><h2>Solution over time</h2><div class="chart-legend"><span class="legend-x">x₁</span><span class="legend-y">x₂</span><span class="legend-z" hidden>x₃</span></div></div><div class="chart-selection"><label for="chart-trajectory">Trajectory</label><select id="chart-trajectory"></select></div><canvas id="time-canvas" aria-label="Components of the selected solution over time"></canvas></section><section class="panel analysis-panel"><div class="panel-heading"><h2>System insight</h2><span class="tiny-label">EIGENVALUES</span></div><div id="eigenvalues" class="eigenvalues"></div><p id="insight" class="insight"></p><div class="matrix-stats"><span>Trace <strong id="trace"></strong></span><span>Determinant <strong id="determinant"></strong></span></div></section></div>
+      <footer class="main-footer"><span id="trajectory-count">3 trajectories</span><span>Linear autonomous systems · x(t) = e<sup>At</sup>x₀</span></footer>
+    </main>
+  </div>
+  <dialog id="guide"><form method="dialog"><div class="section-heading"><h2>Explore your system</h2><button class="icon-button" aria-label="Close guide">×</button></div><p>Every arrow shows the instantaneous direction of motion for <strong>x′ = Ax</strong>. Colored paths follow solutions from their initial conditions.</p><ul><li>Edit any matrix entry or choose a preset.</li><li>Click the 2D portrait to add an initial condition, or edit its coordinates.</li><li>Switch to 3D and drag the portrait to orbit. Scroll or use + / − to zoom.</li><li>Play or scrub time to follow the moving points. Turn off full paths to reveal the paths as they evolve.</li></ul><p>Eigenvalues describe the behavior near the origin. Negative real parts pull solutions inward; positive real parts cause growth; imaginary parts produce rotation.</p><p class="hint">This lab models homogeneous systems with constant real coefficients. Time is in arbitrary units. Solutions are computed with a matrix exponential; paths stop beyond the plotting limit.</p><button class="primary-button">Got it</button></form></dialog>
+  <script type="module" src="app.js"></script>
+</body></html>
