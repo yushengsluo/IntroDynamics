@@ -25,7 +25,8 @@ function element(id){
 const html=fs.readFileSync(new URL('../../dist/apps/linear-flows/index.html',import.meta.url),'utf8');
 for(const m of html.matchAll(/id="([^"]+)"[^>]*?(?:>|$)/g)){const e=element(m[1]),v=m[0].match(/\bvalue="([^"]*)"/);if(v)e.value=v[1];}
 globalThis.document={getElementById:id=>{assert.ok(elements.has(id),`Missing element: ${id}`);return element(id);},querySelector:()=>element('legend-z'),modelContext:{registerTool(tool){registered.set(tool.name,tool);}}};
-globalThis.window={devicePixelRatio:1,addEventListener(){}};
+const windowListeners=new Map();let lightTheme=false;
+globalThis.window={devicePixelRatio:1,AppTheme:{isLight:()=>lightTheme},addEventListener(name,callback){windowListeners.set(name,callback);}};
 globalThis.ResizeObserver=class{constructor(callback){resizeCallbacks.push(callback);}observe(){}};
 const frames=new Map();let frameId=0;
 globalThis.requestAnimationFrame=fn=>{frames.set(++frameId,fn);return frameId;};globalThis.cancelAnimationFrame=id=>frames.delete(id);
@@ -36,6 +37,18 @@ canvasWidth=900;canvasHeight=400;resizeCallbacks.forEach(callback=>callback());
 const read=()=>registered.get('get_linear_system').execute(),canvas=element('phase-canvas');
 const event=(x,y)=>({button:0,pointerId:1,clientX:x,clientY:y});
 const click=(x,y)=>{canvas.listeners.pointerdown(event(x,y));canvas.listeners.pointerup(event(x,y));};
+// Switching the visible theme recolors every canvas without rebuilding inputs or the system.
+const beforeTheme=structuredClone(read()),beforeThemeInputs=element('initials').replacements;
+lightTheme=true;windowListeners.get('themechange')();
+assert.deepEqual(read(),beforeTheme,'Changing the theme preserves the matrix, seeds, time, and view');
+assert.equal(element('initials').replacements,beforeThemeInputs,'Theme changes preserve the initial-condition input nodes');
+assert.equal(element('seed-dot-0').style.background,'#087f66');
+assert.ok(contexts.get('phase-canvas').strokes.some(s=>s.color==='#526c7685'),'Light vector field uses readable strokes');
+assert.ok(contexts.get('time-canvas').strokes.some(s=>s.color==='#087f66'),'The time chart redraws with the light palette');
+assert.ok(contexts.get('trace-canvas').strokes.some(s=>s.color==='#7651b7'),'The trace determinant boundary redraws immediately');
+lightTheme=false;windowListeners.get('themechange')();
+assert.deepEqual(read(),beforeTheme);
+assert.equal(element('seed-dot-0').style.background,'#61dfbd');
 assert.deepEqual(read().timeInterval,{start:-20,end:20});assert.equal(read().initialConditions.length,11);
 assert.deepEqual(read().initialConditions[0],[0,0]);
 for(let i=0;i<8;i++){
@@ -76,8 +89,8 @@ assert.deepEqual(read().initialConditions.at(-1),[1.5,-2]);
 assert.ok(read().initialPointLabels.at(-1).startsWith('Placed point'));
 element('dim-3').onclick();assert.equal(read().dimension,3);assert.equal(element('placement-bar').hidden,false);
 element('slice-value').onchange({target:{value:'−2.75'}});
-const gridColors=['#26394e55','#2d466166'];
-const zoomLayers={'#26394e55':'cubic grid','#2d466166':'coordinate plane grid','#568c80':'x axis','#756caa':'y axis','#94765d':'z axis','#61dfbd50':'placement plane','#47677e6b':'vector field','#b39af1':'trajectory'};
+const gridColors=['#6d6d6d55','#80808066'];
+const zoomLayers={'#6d6d6d55':'cubic grid','#80808066':'coordinate plane grid','#568c80':'x axis','#756caa':'y axis','#94765d':'z axis','#61dfbd50':'placement plane','#47677e6b':'vector field','#b39af1':'trajectory'};
 const geometry=()=>Object.fromEntries(Object.keys(zoomLayers).map(color=>[color,contexts.get('phase-canvas').strokes.filter(s=>s.color===color&&s.path.length>=2).flatMap(s=>gridColors.includes(color)?Array.from({length:s.path.length/2},(_,i)=>s.path.slice(2*i,2*i+2)):[s.path.slice(0,2)])]));
 const originalGeometry=geometry();
 const gridCount=()=>gridColors.reduce((sum,color)=>sum+geometry()[color].length,0);

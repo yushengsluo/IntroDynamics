@@ -1,6 +1,6 @@
 # Linear flows
 
-The Dynamics lab visualizes homogeneous autonomous linear systems, **x′ = Ax**, in two and three dimensions.
+The Linear flow illustration visualizes homogeneous autonomous linear systems, **x′ = Ax**, in two and three dimensions.
 
 Open [`dist/apps/linear-flows/index.html`](../dist/apps/linear-flows/index.html), or choose **Linear flows** from the [main page](../dist/index.html). The app header links back to the main page.
 

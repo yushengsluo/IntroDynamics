@@ -6,10 +6,13 @@
   <title>Intro to nonlinear dynamics and chaos</title>
   <meta name="description" content="Interactive illustrations of linear flows, harmonic oscillators, and the Duffing equation. Explore phase portraits, damping, resonance, and nonlinear motion.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230e1b2b'/%3E%3Cpath d='M28 9H12l10 11-10 11h16' fill='none' stroke='%2361dfbd' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <script src="assets/js/theme.js"></script>
   <link rel="stylesheet" href="assets/css/examples.css">
+  <link rel="stylesheet" href="assets/css/theme.css">
 </head>
 <body>
   <header class="library-header">
+    <button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color mode"><span data-theme-icon aria-hidden="true">☀</span></button>
     <h1 class="library-brand">Dynamics and chaos</h1>
   </header>
   <main>
@@ -20,7 +23,7 @@
       <li>
         <a class="example-card" href="apps/linear-flows/index.html" aria-labelledby="dynamics-title" aria-describedby="dynamics-summary">
           <div class="example-preview" aria-hidden="true">
-            <img src="assets/images/linear-flows.svg" width="400" height="300" alt="">
+            <img src="assets/images/linear-flows.svg" data-dark-src="assets/images/linear-flows.svg" data-light-src="assets/images/linear-flows-light.svg" width="400" height="300" alt="">
             <span class="equation">x′ = Ax</span>
           </div>
           <div class="example-content">
@@ -35,7 +38,7 @@
       <li>
         <a class="example-card" href="apps/forced-oscillator/index.html" aria-labelledby="oscillator-title" aria-describedby="oscillator-summary">
           <div class="example-preview" aria-hidden="true">
-            <img src="assets/images/forced-oscillator.svg" width="400" height="300" alt="">
+            <img src="assets/images/forced-oscillator.svg" data-dark-src="assets/images/forced-oscillator.svg" data-light-src="assets/images/forced-oscillator-light.svg" width="400" height="300" alt="">
             <span class="equation">x″ + bx′ + kx = cos(ωt)</span>
           </div>
           <div class="example-content">

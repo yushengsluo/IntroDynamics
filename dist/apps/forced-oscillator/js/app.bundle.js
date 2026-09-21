@@ -179,7 +179,12 @@ const {createSolution,frequencyResponse} = modules["oscillator.js"];
 const {createDuffingSolution,potential} = modules["duffing.js"];
 
 const $=id=>document.getElementById(id);
-const colors={mint:'#61dfbd',orange:'#f6b77b',violet:'#b9a2ff',muted:'#8298af',grid:'#24354a',axis:'#466079'};
+const palettes={
+ dark:{mint:'#61dfbd',orange:'#f6b77b',violet:'#b9a2ff',muted:'#9d9da6',grid:'#29292e',axis:'#565660',label:'#c5c5ce',wall:'#27272d',hatch:'#62626b',floor:'#44444d',center:'#4c4c56',damper:'#93939e',piston:'#b7b7c2',mass:'#193d34',massLabel:'#bcefe0',wheel:'#a0a0ac',field:'#50505b',halo:'#141414',cursor:'#9ac0b4',well:'#c9c9d3',indicator:'#689e8f',resonance:'#61616c'},
+ light:{mint:'#087f66',orange:'#a8580c',violet:'#7651b7',muted:'#65656e',grid:'#e0e0e4',axis:'#9999a3',label:'#494952',wall:'#d8d8df',hatch:'#85858f',floor:'#9b9ba5',center:'#a8a8b0',damper:'#71717d',piston:'#555560',mass:'#d2eee4',massLabel:'#215744',wheel:'#6b6b76',field:'#a2a2ae',halo:'#fafafa',cursor:'#4b7b6e',well:'#646470',indicator:'#4b7b6e',resonance:'#91919d'}
+};
+const isLight=()=>window.AppTheme?.isLight()??false;
+let colors=palettes[isLight()?'light':'dark'];
 const presets={
  damped:{b:.4,k:1,omega:.8},near:{b:.08,k:1,omega:1},
  beats:{b:0,k:1,omega:1.15},resonance:{b:0,k:1,omega:1},
@@ -194,13 +199,16 @@ const names={b:'Damping',k:'Stiffness',beta:'Cubic stiffness',omega:'Driving fre
 let parameters={...presets.damped,beta:1,x0:0,v0:0},startTime=0,endTime=40,time=0,speed=1,playing=false,model='harmonic';
 const savedParameters={harmonic:null,duffing:null};
 let solution,points,forcingPoints,xRange=1,vRange=1,needsBuild=true,scheduled=false,lastFrame=null;
-const trajectoryColors=[colors.mint,'#7fbfff','#f58ca5','#e5d179','#d29ef6','#8fd59a','#f6b77b','#9eb2ff','#e8a5d1','#8bd5dd','#cadb91','#cab39c'];
+// Keep each trajectory's color identity stable when the display theme changes.
+const trajectoryColors=[palettes.dark.mint,'#7fbfff','#f58ca5','#e5d179','#d29ef6','#8fd59a','#f6b77b','#9eb2ff','#e8a5d1','#8bd5dd','#cadb91','#cab39c'];
+const lightTrajectoryColors=[palettes.light.mint,'#246baf','#bd355b','#89720d','#8950b1','#337d3f',palettes.light.orange,'#575abc','#ab3c82','#167e8a','#637c20','#87623e'];
+const trajectoryColor=trajectory=>isLight()?lightTrajectoryColors[trajectoryColors.indexOf(trajectory.color)]??colors.mint:trajectory.color;
 const MAX_TRAJECTORIES=12,curveCache=new Map();
 let nextTrajectoryId=1,trajectories=[],activeId;
 const activeTrajectory=()=>trajectories.find(trajectory=>trajectory.id===activeId);
 function makeTrajectory(x0,v0){
  const id=nextTrajectoryId++;
- const color=trajectoryColors.find(color=>!trajectories.some(trajectory=>trajectory.color===color))??colors.mint;
+ const color=trajectoryColors.find(color=>!trajectories.some(trajectory=>trajectory.color===color))??palettes.dark.mint;
  return {id,x0,v0,color};
 }
 function resetTrajectories(){
@@ -346,7 +354,7 @@ function plot(ctx,w,h,{xmin,xmax,ymin,ymax,xlabel,ylabel,log=false}){
  }
  if(ymin<=0&&ymax>=0)line(ctx,left,Y(0),right,Y(0),colors.axis);
  if(xmin<=0&&xmax>=0)line(ctx,X(0),top,X(0),bottom,colors.axis);
- ctx.fillStyle='#adbdce';ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText(xlabel,right,h-13);
+ ctx.fillStyle=colors.label;ctx.textAlign='right';ctx.textBaseline='top';ctx.fillText(xlabel,right,h-13);
  ctx.textAlign='left';ctx.fillText(ylabel,12,5);
  return {X,Y,left,right,top,bottom};
 }
@@ -365,20 +373,20 @@ function curve(ctx,data,X,Y,value,color,{width=1.5,dash=[],end=Infinity,cacheKey
 function drawMotion(s,current){
  if(current.clipped){s.ctx.fillStyle=colors.muted;s.ctx.textAlign='center';s.ctx.fillText('State exceeds the plotting limit at this time',s.w/2,s.h/2);return;}
  const {ctx,w,h}=s,wall=25,center=w*.66,travel=Math.max(20,w*.17),massX=center+current.x/xRange*travel,cy=h*.51;
- ctx.fillStyle='#1b2c40';ctx.fillRect(14,cy-52,11,100);
- for(let y=cy-51;y<cy+49;y+=9)line(ctx,14,y,23,y-6,'#526780');
- line(ctx,wall,cy+43,w-18,cy+43,'#3a5069');
- ctx.setLineDash([3,4]);line(ctx,center,cy-71,center,cy+60,'#3e586b');ctx.setLineDash([]);
+ ctx.fillStyle=colors.wall;ctx.fillRect(14,cy-52,11,100);
+ for(let y=cy-51;y<cy+49;y+=9)line(ctx,14,y,23,y-6,colors.hatch);
+ line(ctx,wall,cy+43,w-18,cy+43,colors.floor);
+ ctx.setLineDash([3,4]);line(ctx,center,cy-71,center,cy+60,colors.center);ctx.setLineDash([]);
  const edge=massX-22,start=wall+15,end=edge-10,sy=cy-15;
  ctx.strokeStyle=colors.mint;ctx.lineWidth=1.8;ctx.beginPath();ctx.moveTo(wall,sy);ctx.lineTo(start,sy);
  for(let i=0;i<=16;i++)ctx.lineTo(start+(end-start)*i/16,sy+(i===0||i===16?0:i%2?8:-8));
  ctx.lineTo(edge,sy);ctx.stroke();
  const dy=cy+20,damper=wall+(edge-wall)*.48;
- line(ctx,wall,dy,damper-13,dy,'#6d8ba5',1.6);ctx.strokeStyle='#6d8ba5';ctx.strokeRect(damper-13,dy-7,27,14);
- line(ctx,damper+7,dy-5,damper+7,dy+5,'#9cb5c9',2);line(ctx,damper+7,dy,edge,dy,'#9cb5c9',1.6);
- ctx.fillStyle='#1d4744';ctx.fillRect(edge,cy-32,44,67);ctx.strokeStyle=colors.mint;ctx.lineWidth=1.5;ctx.strokeRect(edge,cy-32,44,67);
- ctx.fillStyle='#bcefe0';ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='12px system-ui, sans-serif';ctx.fillText('m = 1',massX,cy);
- dot(ctx,massX-12,cy+39,'#8ba7b8',4);dot(ctx,massX+12,cy+39,'#8ba7b8',4);
+ line(ctx,wall,dy,damper-13,dy,colors.damper,1.6);ctx.strokeStyle=colors.damper;ctx.strokeRect(damper-13,dy-7,27,14);
+ line(ctx,damper+7,dy-5,damper+7,dy+5,colors.piston,2);line(ctx,damper+7,dy,edge,dy,colors.piston,1.6);
+ ctx.fillStyle=colors.mass;ctx.fillRect(edge,cy-32,44,67);ctx.strokeStyle=colors.mint;ctx.lineWidth=1.5;ctx.strokeRect(edge,cy-32,44,67);
+ ctx.fillStyle=colors.massLabel;ctx.textAlign='center';ctx.textBaseline='middle';ctx.font='12px system-ui, sans-serif';ctx.fillText('m = 1',massX,cy);
+ dot(ctx,massX-12,cy+39,colors.wheel,4);dot(ctx,massX+12,cy+39,colors.wheel,4);
  arrow(ctx,massX,cy-51,Math.min(36,w*.09)*current.force,0,colors.orange,2);
  ctx.fillStyle=colors.orange;ctx.font='10px system-ui, sans-serif';ctx.fillText('cos(ωt)',massX,cy-72);
  ctx.fillStyle=colors.muted;ctx.fillText('0',center,cy+67);ctx.fillText(model==='duffing'?'k, β':'k',wall+(edge-wall)*.38,sy-19);ctx.fillText('b',damper,dy+18);
@@ -391,19 +399,19 @@ function drawPhase(s,current){
     const x=i*xRange/5.6,v=j*vRange/4.6,dx=v/xRange*(p.right-p.left),dy=-(current.force-parameters.b*v-parameters.k*x-(model==='duffing'?parameters.beta*x*x*x:0))/vRange*(p.bottom-p.top);
     const length=Math.hypot(dx,dy);if(length<1e-10)continue;
     const scale=Math.min(12,(p.right-p.left)/20)/length;
-    arrow(ctx,p.X(x)-dx*scale/2,p.Y(v)-dy*scale/2,dx*scale,dy*scale,'#39546b');
+    arrow(ctx,p.X(x)-dx*scale/2,p.Y(v)-dy*scale/2,dx*scale,dy*scale,colors.field);
    }
   }
   for(const trajectory of trajectories){
    ctx.globalAlpha=.22;
-   curve(ctx,trajectory.points,q=>p.X(q.x),p.Y,q=>q.v,trajectory.color,{width:1.3,cacheKey:'phase-'+trajectory.id});
+   curve(ctx,trajectory.points,q=>p.X(q.x),p.Y,q=>q.v,trajectoryColor(trajectory),{width:1.3,cacheKey:'phase-'+trajectory.id});
   }
   ctx.globalAlpha=1;
   const states=trajectories.map(trajectory=>trajectory.id===activeId?current:trajectory.solution.at(time));
   // Selection controls the readouts, not which trajectories advance. Only the
   // faint full-window paths are cached; each bright trail follows the clock.
   for(let i=0;i<trajectories.length;i++){
-   const {points:history,color}=trajectories[i],state=states[i];
+   const {points:history}=trajectories[i],color=trajectoryColor(trajectories[i]),state=states[i];
    let lower=0,upper=history.length-1;
    while(lower<upper){const middle=Math.ceil((lower+upper)/2);if(history[middle].t<=time)lower=middle;else upper=middle-1;}
    curve(ctx,history,q=>p.X(q.x),p.Y,q=>q.v,color,{width:2,end:time});
@@ -411,13 +419,13 @@ function drawPhase(s,current){
    if(!previous.clipped&&!state.clipped)line(ctx,p.X(previous.x),p.Y(previous.v),p.X(state.x),p.Y(state.v),color,2);
   }
   for(const trajectory of trajectories){
-   ctx.strokeStyle=trajectory.color;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.X(trajectory.x0),p.Y(trajectory.v0),4,0,2*Math.PI);ctx.stroke();
+   ctx.strokeStyle=trajectoryColor(trajectory);ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(p.X(trajectory.x0),p.Y(trajectory.v0),4,0,2*Math.PI);ctx.stroke();
   }
   for(let i=0;i<trajectories.length;i++){
    const trajectory=trajectories[i],state=states[i];
    if(!state.clipped){
-    dot(ctx,p.X(state.x),p.Y(state.v),'#101c2b',trajectory.id===activeId?8:7);
-    dot(ctx,p.X(state.x),p.Y(state.v),trajectory.color,4);
+    dot(ctx,p.X(state.x),p.Y(state.v),colors.halo,trajectory.id===activeId?8:7);
+    dot(ctx,p.X(state.x),p.Y(state.v),trajectoryColor(trajectory),4);
    }
   }
  });
@@ -429,11 +437,11 @@ function drawTime(s,current){
   if(model==='harmonic'&&$('show-particular').checked&&!solution.response.resonant)curve(ctx,points,q=>p.X(q.t),p.Y,q=>solution.particular(q.t),colors.violet,{width:1.2,dash:[6,5],cacheKey:'particular'});
   for(const trajectory of trajectories){
    ctx.globalAlpha=trajectory.id===activeId?1:.6;
-   curve(ctx,trajectory.points,q=>p.X(q.t),p.Y,q=>q.x,trajectory.color,{width:trajectory.id===activeId?1.8:1.2,cacheKey:'time-'+trajectory.id});
+   curve(ctx,trajectory.points,q=>p.X(q.t),p.Y,q=>q.x,trajectoryColor(trajectory),{width:trajectory.id===activeId?1.8:1.2,cacheKey:'time-'+trajectory.id});
   }
   ctx.globalAlpha=1;
-  ctx.setLineDash([3,4]);line(ctx,p.X(time),p.top,p.X(time),p.bottom,'#9ac0b4');ctx.setLineDash([]);
-  if(!current.clipped)dot(ctx,p.X(time),p.Y(current.x),activeTrajectory().color,4);
+  ctx.setLineDash([3,4]);line(ctx,p.X(time),p.top,p.X(time),p.bottom,colors.cursor);ctx.setLineDash([]);
+  if(!current.clipped)dot(ctx,p.X(time),p.Y(current.x),trajectoryColor(activeTrajectory()),4);
  });
 }
 function drawPotential(s,current){
@@ -444,9 +452,9 @@ function drawPotential(s,current){
  const p=plot(ctx,w,h,{xmin:-extent,xmax:extent,ymin:low-padding,ymax:high+padding,xlabel:'x',ylabel:'V(x)'});
  clip(ctx,p,()=>{
   curve(ctx,values,q=>p.X(q.t),p.Y,q=>q.y,colors.violet,{width:2});
-  if(well>0&&well<=extent)for(const x of [-well,well])dot(ctx,p.X(x),p.Y(potential(k,beta,x)),'#b9cbda',3);
+  if(well>0&&well<=extent)for(const x of [-well,well])dot(ctx,p.X(x),p.Y(potential(k,beta,x)),colors.well,3);
   if(!current.clipped&&Math.abs(current.x)<=extent){
-   ctx.setLineDash([3,4]);line(ctx,p.X(current.x),p.top,p.X(current.x),p.bottom,'#689e8f');ctx.setLineDash([]);
+   ctx.setLineDash([3,4]);line(ctx,p.X(current.x),p.top,p.X(current.x),p.bottom,colors.indicator);ctx.setLineDash([]);
    dot(ctx,p.X(current.x),p.Y(potential(k,beta,current.x)),colors.mint,4);
   }
  });
@@ -456,7 +464,7 @@ function drawResponse(s,current){
  const {ctx,w,h}=s,maxOmega=Math.max(3,2*solution.naturalFrequency,parameters.omega*1.2),p=plot(ctx,w,h,{xmin:0,xmax:maxOmega,ymin:-2,ymax:3,xlabel:'Ω',ylabel:'R',log:true});
  clip(ctx,p,()=>{
   const natural=solution.naturalFrequency;
-  if(parameters.b===0){ctx.setLineDash([3,5]);line(ctx,p.X(natural),p.top,p.X(natural),p.bottom,'#526078');ctx.setLineDash([]);}
+  if(parameters.b===0){ctx.setLineDash([3,5]);line(ctx,p.X(natural),p.top,p.X(natural),p.bottom,colors.resonance);ctx.setLineDash([]);}
   // Sample densely around narrow resonances so low damping never hides the peak.
   const frequencies=Array.from({length:501},(_,i)=>i*maxOmega/500);
   for(const offset of [0,.00001,.0001,.001,.005,.01,.025,.05,.1,.2])for(const sign of [-1,1]){
@@ -470,7 +478,7 @@ function drawResponse(s,current){
    const x=p.X(omega),y=p.Y(Math.log10(amplitude));
    if(previous===null)ctx.moveTo(x,y);else ctx.lineTo(x,y);previous=omega;
   }
-  ctx.stroke();ctx.setLineDash([3,4]);line(ctx,p.X(parameters.omega),p.top,p.X(parameters.omega),p.bottom,'#689e8f');ctx.setLineDash([]);
+  ctx.stroke();ctx.setLineDash([3,4]);line(ctx,p.X(parameters.omega),p.top,p.X(parameters.omega),p.bottom,colors.indicator);ctx.setLineDash([]);
   dot(ctx,p.X(parameters.omega),p.Y(Math.min(3,Math.max(-2,Math.log10(solution.response.amplitude)))),colors.mint,4);
  });
  ctx.textAlign='right';ctx.textBaseline='top';ctx.fillStyle=colors.mint;ctx.fillText('ω = '+fmt(parameters.omega),p.right,p.top+5);
@@ -510,7 +518,7 @@ function updateTrajectoryControls(){
  $('trajectory-select').innerHTML=trajectories.map(trajectory=>'<option value="'+trajectory.id+'">'+trajectory.id+' · ('+initialLabel(trajectory.x0)+', '+initialLabel(trajectory.v0)+')</option>').join('');
  $('trajectory-select').value=String(activeId);
  $('trajectory-count').textContent=trajectories.length+' / '+MAX_TRAJECTORIES;
- $('trajectory-legend').innerHTML=trajectories.map(trajectory=>'<span class="trajectory-chip'+(trajectory.id===activeId?' selected':'')+'" style="--trajectory-color:'+trajectory.color+'">'+(trajectory.id===activeId?'● ':'')+'Trajectory '+trajectory.id+'</span>').join('');
+ $('trajectory-legend').innerHTML=trajectories.map(trajectory=>'<span class="trajectory-chip'+(trajectory.id===activeId?' selected':'')+'" style="--trajectory-color:'+trajectoryColor(trajectory)+'">'+(trajectory.id===activeId?'● ':'')+'Trajectory '+trajectory.id+'</span>').join('');
  $('selected-trajectory').textContent='Following trajectory '+activeId;
  $('add-trajectory').disabled=trajectories.length>=MAX_TRAJECTORIES;
  $('remove-trajectory').disabled=trajectories.length===1;
@@ -577,7 +585,6 @@ function updateModelControls(){
  $('particular-control').hidden=nonlinear;$('show-particular').disabled=nonlinear;
  $('equation').textContent=nonlinear?'x″ + bx′ + kx + βx³ = cos(ωt)':'x″ + bx′ + kx = cos(ωt)';
  $('page-title').textContent=nonlinear?'Duffing oscillator':'Damped, forced oscillator';
- $('model-note').textContent=nonlinear?'Second-order nonlinear ODE':'Second-order linear ODE';
  $('response-heading').textContent=nonlinear?'Unforced potential':'Frequency response';
  $('response-subtitle').textContent=nonlinear?'V(x) = ½kx² + ¼βx⁴':'Amplitude · log scale';
  $('response-note').textContent=nonlinear?'Spring potential only; the external drive and damping act separately. The dot shows the current position.':'Same b and k, varying drive Ω. Amplitudes above 10³ are clipped.';
@@ -596,6 +603,12 @@ $('model').addEventListener('change',()=>{
  updateModelControls();syncParameterInputs();$('preset').value='custom';validate();schedule(true);
 });
 $('preset').addEventListener('change',()=>applyPreset($('preset').value));
+$('guide-button').addEventListener('click',()=>$('guide').showModal());
+$('guide').addEventListener('click',event=>{
+ if(event.target!==$('guide'))return;
+ const bounds=$('guide').getBoundingClientRect();
+ if(event.clientX<bounds.left||event.clientX>bounds.right||event.clientY<bounds.top||event.clientY>bounds.bottom)$('guide').close();
+});
 $('reset').addEventListener('click',()=>{
  for(const id of ['show-force','show-particular','show-field'])$(id).checked=true;
  speed=1;$('speed').value='1';startTime=0;endTime=40;applyPreset('damped');
@@ -630,6 +643,10 @@ document.addEventListener('visibilitychange',()=>{lastFrame=null;});
 const onResize=()=>{curveCache.clear();schedule();};
 new ResizeObserver(onResize).observe(document.querySelector('main'));
 window.addEventListener('resize',onResize);
+window.addEventListener('themechange',()=>{
+ colors=palettes[isLight()?'light':'dark'];
+ updateTrajectoryControls();schedule();
+});
 updateModelControls();
 schedule(true);
 return {};

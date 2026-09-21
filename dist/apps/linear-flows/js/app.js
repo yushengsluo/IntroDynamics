@@ -4,8 +4,10 @@ import {representativeSeeds,evaluateRepresentative,trackedDirectionSeed} from '.
 import {pointOnSlice} from './placement.js';
 import {MAX_3D_RANGE,scene3D,grid3DLines} from './scene.js';
 import {createTraceDetPlane} from './trace-determinant.js';
+import {plotPalette} from './palette.js';
 const MAX_MANUAL_SEEDS=40;
-const $=id=>document.getElementById(id),colors=['#61dfbd','#b39af1','#f3ac77','#72bafa','#f281a6','#dfd075'];
+const $=id=>document.getElementById(id);
+let colors=plotPalette().colors;
 const presets={2:{spiral:[[-.35,-1.4],[1.4,-.35]],saddle:[[1,.5],[0,-1]],center:[[0,-1],[1,0]],node:[[-.6,.3],[0,-1.2]],unstable_node:[[.6,.3],[0,1.2]],source:[[.2,-1],[1,.2]],degenerate:[[0,1],[0,0]]},3:{spiral:[[-.25,-1.4,0],[1.4,-.25,0],[0,0,-.55]],saddle:[[.5,0,0],[0,-.6,0],[0,0,-1]],center:[[0,-1,0],[1,0,0],[0,0,0]],node:[[-.4,.2,0],[0,-.8,.2],[0,0,-1.2]],unstable_node:[[.4,.2,0],[0,.8,.2],[0,0,1.2]],source:[[.15,-1,0],[1,.15,0],[0,0,.1]],degenerate:[[0,1,0],[0,0,1],[0,0,0]]}};
 let state={dim:2,A:presets[2].spiral.map(r=>[...r]),seeds:[],seedMeta:[],sliceAxis:2,sliceValue:0,hover:null,timeStart:-20,timeEnd:20,t:-20,playing:false,speed:1,range:DEFAULT_RANGE,field:true,grid:true,paths:true,yaw:.65,pitch:.5,selected:0};
 let paths=[],phaseCtx=$('phase-canvas').getContext('2d'),chartCtx=$('time-canvas').getContext('2d'),frame=0,previous=0;
@@ -42,7 +44,7 @@ function renderControls({renderMatrix=true,renderSeeds=true}={}){
  $('initial-error').textContent='';
  $('trace-panel').hidden=state.dim!==2;$('portrait-layout').classList.toggle('has-trace-plane',state.dim===2);if(state.dim!==2)tracePlane.cancel();
  if(renderMatrix){$('matrix').style.gridTemplateColumns=`repeat(${state.dim},1fr)`;$('matrix').innerHTML=state.A.map((row,i)=>row.map((v,j)=>`<input type="number" value="${v}" min="-20" max="20" step="any" aria-label="Matrix row ${i+1}, column ${j+1}" data-row="${i}" data-col="${j}">`).join('')).join('');}
- if(renderSeeds){$('initials').innerHTML=state.seeds.map((seed,i)=>`<div class="seed-entry"><div class="seed-row ${state.dim===3?'three':''}"><span class="seed-dot" style="background:${colors[i%colors.length]}"></span>${seed.map((v,j)=>`<label class="seed-coordinate"><span>x${'₁₂₃'[j]}</span><input id="seed-${i}-${j}" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="${v}" aria-describedby="initial-error" aria-label="Trajectory ${i+1}, coordinate ${j+1}" data-seed="${i}" data-axis="${j}"></label>`).join('')}<button class="remove-seed" aria-label="Remove trajectory ${i+1}" data-remove="${i}" ${state.seeds.length===1?'disabled':''}>×</button></div><div id="seed-label-${i}" class="seed-behavior">${state.seedMeta[i]?.label||'Custom point'}</div></div>`).join('');
+ if(renderSeeds){$('initials').innerHTML=state.seeds.map((seed,i)=>`<div class="seed-entry"><div class="seed-row ${state.dim===3?'three':''}"><span id="seed-dot-${i}" class="seed-dot" style="background:${colors[i%colors.length]}"></span>${seed.map((v,j)=>`<label class="seed-coordinate"><span>x${'₁₂₃'[j]}</span><input id="seed-${i}-${j}" type="text" inputmode="text" autocomplete="off" spellcheck="false" value="${v}" aria-describedby="initial-error" aria-label="Trajectory ${i+1}, coordinate ${j+1}" data-seed="${i}" data-axis="${j}"></label>`).join('')}<button class="remove-seed" aria-label="Remove trajectory ${i+1}" data-remove="${i}" ${state.seeds.length===1?'disabled':''}>×</button></div><div id="seed-label-${i}" class="seed-behavior">${state.seedMeta[i]?.label||'Custom point'}</div></div>`).join('');
  $('chart-trajectory').innerHTML=state.seeds.map((_,i)=>`<option value="${i}">${i+1}</option>`).join('');$('chart-trajectory').value=state.selected;$('add-trajectory').disabled=state.seedMeta.filter(s=>s.source==='manual').length>=MAX_MANUAL_SEEDS;
  }else state.seedMeta.forEach((seed,i)=>{if(seed.source!=='tracked')return;seed.x.forEach((v,j)=>$('seed-'+i+'-'+j).value=v);$('seed-label-'+i).textContent=seed.label;});
  $('dim-2').classList.toggle('selected',state.dim===2);$('dim-3').classList.toggle('selected',state.dim===3);$('dim-2').setAttribute('aria-pressed',state.dim===2);$('dim-3').setAttribute('aria-pressed',state.dim===3);
@@ -61,27 +63,27 @@ function canvasSize(canvas,ctx){const r=canvas.getBoundingClientRect(),dpr=Math.
 function projection(w,h){const scale=Math.min(w,h)/(state.range*2);return x=>{if(state.dim===2)return[w/2+x[0]*scale,h/2-x[1]*scale,0];const a=x[0]*Math.cos(state.yaw)-x[1]*Math.sin(state.yaw),b=x[0]*Math.sin(state.yaw)+x[1]*Math.cos(state.yaw),v=b*Math.sin(state.pitch)+x[2]*Math.cos(state.pitch),depth=b*Math.cos(state.pitch)-x[2]*Math.sin(state.pitch);return[w/2+a*scale,h/2-v*scale,depth];};}
 function draw(){drawPhase();drawChart();$('time-label').textContent=`t = ${state.t.toFixed(2)}`;$('timeline').value=state.t;}
 function arrow(c,p,q,color,size=4){const dx=q[0]-p[0],dy=q[1]-p[1],a=Math.atan2(dy,dx);if(Math.hypot(dx,dy)<1)return;c.strokeStyle=color;c.beginPath();c.moveTo(p[0],p[1]);c.lineTo(q[0],q[1]);c.moveTo(q[0]-size*Math.cos(a-.48),q[1]-size*Math.sin(a-.48));c.lineTo(q[0],q[1]);c.lineTo(q[0]-size*Math.cos(a+.48),q[1]-size*Math.sin(a+.48));c.stroke();}
-function drawPhase(){const c=phaseCtx,{w,h}=canvasSize($('phase-canvas'),c);if(w<=0||h<=0)return;const scale=Math.min(w,h)/(state.range*2),project=projection(w,h),scene=state.dim===3?scene3D(state.range,w,h,state.yaw,state.pitch):null;c.clearRect(0,0,w,h);c.save();c.beginPath();c.rect(0,0,w,h);c.clip();
- if(state.grid&&state.dim===2){const step=state.range>12?5:state.range>6?2:state.range<2?.25:1;c.lineWidth=1;for(let v=-Math.ceil(w/scale/2/step)*step;v<=w/scale/2;v+=step){const [x]=project([v,0]);c.strokeStyle=Math.abs(v)<1e-9?'#435770':'#1c2c40';c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();if(Math.abs(v)>1e-9){c.fillStyle='#647d98';c.font='10px monospace';c.fillText(fmt(v),x+4,h/2+15);}}for(let v=-Math.ceil(h/scale/2/step)*step;v<=h/scale/2;v+=step){const [,y]=project([0,v]);c.strokeStyle=Math.abs(v)<1e-9?'#435770':'#1c2c40';c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();if(Math.abs(v)>1e-9){c.fillStyle='#647d98';c.font='10px monospace';c.fillText(fmt(v),w/2+7,y-5);}}c.fillStyle='#acc0d5';c.font='12px monospace';c.fillText('x₁',w-26,h/2-10);c.fillText('x₂',w/2+10,20);}
+function drawPhase(){const palette=plotPalette(),c=phaseCtx,{w,h}=canvasSize($('phase-canvas'),c);if(w<=0||h<=0)return;const scale=Math.min(w,h)/(state.range*2),project=projection(w,h),scene=state.dim===3?scene3D(state.range,w,h,state.yaw,state.pitch):null;c.clearRect(0,0,w,h);c.save();c.beginPath();c.rect(0,0,w,h);c.clip();
+ if(state.grid&&state.dim===2){const step=state.range>12?5:state.range>6?2:state.range<2?.25:1;c.lineWidth=1;for(let v=-Math.ceil(w/scale/2/step)*step;v<=w/scale/2;v+=step){const [x]=project([v,0]);c.strokeStyle=Math.abs(v)<1e-9?palette.axis:palette.grid;c.beginPath();c.moveTo(x,0);c.lineTo(x,h);c.stroke();if(Math.abs(v)>1e-9){c.fillStyle=palette.tick;c.font='10px monospace';c.fillText(fmt(v),x+4,h/2+15);}}for(let v=-Math.ceil(h/scale/2/step)*step;v<=h/scale/2;v+=step){const [,y]=project([0,v]);c.strokeStyle=Math.abs(v)<1e-9?palette.axis:palette.grid;c.beginPath();c.moveTo(0,y);c.lineTo(w,y);c.stroke();if(Math.abs(v)>1e-9){c.fillStyle=palette.tick;c.font='10px monospace';c.fillText(fmt(v),w/2+7,y-5);}}c.fillStyle=palette.label;c.font='12px monospace';c.fillText('x₁',w-26,h/2-10);c.fillText('x₂',w/2+10,20);}
  if(state.grid&&state.dim===3){
   // Batch each opacity level so overlapping depth lines do not accumulate darkness.
   c.lineWidth=1;
   for(const major of [false,true]){
-   c.strokeStyle=major?'#2d466166':'#26394e55';c.beginPath();
+   c.strokeStyle=major?palette.grid3DMajor:palette.grid3D;c.beginPath();
    for(const line of grid3DLines(scene)){if(line.major!==major)continue;c.moveTo(...project(line.a).slice(0,2));c.lineTo(...project(line.b).slice(0,2));}
    c.stroke();
   }
   for(let axis=0;axis<3;axis++){
    const a=[0,0,0],b=[0,0,0];a[axis]=-scene.gridExtents[axis];b[axis]=scene.gridExtents[axis];
-   const start=project(a),end=project(b);c.strokeStyle=['#568c80','#756caa','#94765d'][axis];c.beginPath();c.moveTo(start[0],start[1]);c.lineTo(end[0],end[1]);c.stroke();
+   const start=project(a),end=project(b);c.strokeStyle=palette.axes3D[axis];c.beginPath();c.moveTo(start[0],start[1]);c.lineTo(end[0],end[1]);c.stroke();
    const dx=end[0]-w/2,dy=end[1]-h/2,t=Math.min(1,(w/2-24)/(Math.abs(dx)||1),(h/2-24)/(Math.abs(dy)||1));
    c.fillStyle=colors[axis];c.font='12px monospace';c.fillText('x'+'₁₂₃'[axis],w/2+dx*t+5,h/2+dy*t-5);
   }
-  c.fillStyle='#7288a1';c.font='10px monospace';c.fillText(`Grid spacing: ${fmt(scene.gridStep)}`,16,22);
+  c.fillStyle=palette.tick;c.font='10px monospace';c.fillText(`Grid spacing: ${fmt(scene.gridStep)}`,16,22);
  }
  if(state.dim===3){
   const r=scene.radius,axes=[0,1,2].filter(i=>i!==state.sliceAxis),corner=(a,b)=>{const p=[0,0,0];p[state.sliceAxis]=state.sliceValue;p[axes[0]]=a;p[axes[1]]=b;return project(p);};
-  c.fillStyle='#61dfbd0c';c.strokeStyle='#61dfbd50';c.lineWidth=1;c.setLineDash([5,5]);c.beginPath();
+  c.fillStyle=palette.sliceFill;c.strokeStyle=palette.sliceStroke;c.lineWidth=1;c.setLineDash([5,5]);c.beginPath();
   [[-r,-r],[r,-r],[r,r],[-r,r]].forEach(([a,b],i)=>{const p=corner(a,b);i?c.lineTo(p[0],p[1]):c.moveTo(p[0],p[1]);});c.closePath();c.fill();c.stroke();c.setLineDash([]);
  }
  if(state.field){c.lineWidth=1;if(state.dim===2){
@@ -90,7 +92,7 @@ function drawPhase(){const c=phaseCtx,{w,h}=canvasSize($('phase-canvas'),c);if(w
   for(let i=-columns;i<=columns;i++)for(let j=-rows;j<=rows;j++){
    const x=i*spacing,y=j*spacing,v=matVec(state.A,[x,y]),len=Math.hypot(...v);if(len<1e-12)continue;
    const vx=v[0]/len*length,vy=v[1]/len*length;
-   arrow(c,project([x-vx/2,y-vy/2]),project([x+vx/2,y+vy/2]),'#4c71847a',length*scale*.27);
+   arrow(c,project([x-vx/2,y-vy/2]),project([x+vx/2,y+vy/2]),palette.field2D,length*scale*.27);
   }
  }else{
   const [nx,ny,nz]=scene.counts,s=scene.fieldStep;
@@ -100,31 +102,31 @@ function drawPhase(){const c=phaseCtx,{w,h}=canvasSize($('phase-canvas'),c);if(w
    const magnitude=Math.max(...p.map(Math.abs));if(magnitude===0)continue;
    const v=matVec(state.A,p.map(value=>value/magnitude)),norm=Math.hypot(...v);if(norm<1e-12)continue;
    const q=p.map((a,i)=>a+v[i]/norm*scene.fieldLength);
-   arrow(c,start,project(q),'#47677e6b',scene.fieldLength*scale/6);
+   arrow(c,start,project(q),palette.field3D,scene.fieldLength*scale/6);
   }
  }}
  const transition=expm(state.A,state.t);
  paths.forEach((points,i)=>{const color=colors[i%colors.length];c.strokeStyle=color;c.lineWidth=1.8;c.globalAlpha=.83;c.beginPath();let connected=false;for(const p of points){if(!state.paths&&p.t>state.t)break;if(!p.x){connected=false;continue;}const q=project(p.x);if(connected)c.lineTo(q[0],q[1]);else c.moveTo(q[0],q[1]);connected=true;}c.stroke();c.globalAlpha=1;
-  const start=project(state.seeds[i]);c.fillStyle='#0d1828';c.strokeStyle=color;c.lineWidth=1.5;c.beginPath();c.arc(start[0],start[1],i===state.selected?5.5:4,0,Math.PI*2);c.fill();c.stroke();
+  const start=project(state.seeds[i]);c.fillStyle=palette.surface;c.strokeStyle=color;c.lineWidth=1.5;c.beginPath();c.arc(start[0],start[1],i===state.selected?5.5:4,0,Math.PI*2);c.fill();c.stroke();
   for(const fraction of [.065,.2,.43]){const j=Math.floor(points.length*fraction);if(j<2||!points[j].x||!points[j-2].x||(!state.paths&&points[j].t>state.t))continue;const p=project(points[j-2].x),q=project(points[j].x);if(Math.hypot(q[0]-start[0],q[1]-start[1])>15&&Math.hypot(q[0]-w/2,q[1]-h/2)>14){c.lineWidth=1.4;arrow(c,p,q,color,5);}}
-  const current=seedAt(i,state.t,transition);if(current.every(Number.isFinite)){const q=project(current);if(q[0]>-10&&q[0]<w+10&&q[1]>-10&&q[1]<h+10){c.shadowColor=color;c.shadowBlur=13;c.fillStyle=color;c.beginPath();c.arc(q[0],q[1],4.4,0,Math.PI*2);c.fill();c.shadowBlur=0;c.strokeStyle='#09201b';c.lineWidth=1;c.stroke();}}
- });if(state.hover){const p=project(state.hover);c.strokeStyle='#e4fff6';c.lineWidth=1.5;c.setLineDash([3,3]);c.beginPath();c.arc(p[0],p[1],7,0,Math.PI*2);c.stroke();c.setLineDash([]);c.fillStyle='#d0f8e9';c.font='12px monospace';c.fillText('('+state.hover.map(v=>fmt(v)).join(', ')+')',Math.min(w-160,p[0]+12),Math.max(18,p[1]-12));}
- c.fillStyle='#e1edf8';c.beginPath();c.arc(w/2,h/2,2.5,0,Math.PI*2);c.fill();c.restore();
+  const current=seedAt(i,state.t,transition);if(current.every(Number.isFinite)){const q=project(current);if(q[0]>-10&&q[0]<w+10&&q[1]>-10&&q[1]<h+10){c.shadowColor=color;c.shadowBlur=13;c.fillStyle=color;c.beginPath();c.arc(q[0],q[1],4.4,0,Math.PI*2);c.fill();c.shadowBlur=0;c.strokeStyle=palette.markerOutline;c.lineWidth=1;c.stroke();}}
+ });if(state.hover){const p=project(state.hover);c.strokeStyle=palette.hover;c.lineWidth=1.5;c.setLineDash([3,3]);c.beginPath();c.arc(p[0],p[1],7,0,Math.PI*2);c.stroke();c.setLineDash([]);c.fillStyle=palette.hoverText;c.font='12px monospace';c.fillText('('+state.hover.map(v=>fmt(v)).join(', ')+')',Math.min(w-160,p[0]+12),Math.max(18,p[1]-12));}
+ c.fillStyle=palette.origin;c.beginPath();c.arc(w/2,h/2,2.5,0,Math.PI*2);c.fill();c.restore();
 }
 function drawChart(){
- const c=chartCtx,{w,h}=canvasSize($('time-canvas'),c);if(w<=0||h<=0)return;c.clearRect(0,0,w,h);
+ const palette=plotPalette(),c=chartCtx,{w,h}=canvasSize($('time-canvas'),c);if(w<=0||h<=0)return;c.clearRect(0,0,w,h);
  const points=paths[state.selected]||[],max=Math.max(.5,...points.flatMap(p=>p.x?p.x.map(Math.abs):[])),left=50,top=8,cw=w-left-12,ch=h-top-23;
  const timeX=t=>left+(t-state.timeStart)/(state.timeEnd-state.timeStart)*cw;
  c.font='9px monospace';
- for(let i=0;i<3;i++){const y=top+i*ch/2;c.strokeStyle='#293a4d';c.beginPath();c.moveTo(left,y);c.lineTo(w,y);c.stroke();c.fillStyle='#8296ae';c.fillText(fmt(max-i*max,1),1,y+3);}
- for(let i=0;i<=4;i++){const t=state.timeStart+(state.timeEnd-state.timeStart)*i/4;c.fillStyle='#8296ae';c.textAlign=i===0?'left':i===4?'right':'center';c.fillText(fmt(t),timeX(t),h-4);}c.textAlign='left';
+ for(let i=0;i<3;i++){const y=top+i*ch/2;c.strokeStyle=palette.grid;c.beginPath();c.moveTo(left,y);c.lineTo(w,y);c.stroke();c.fillStyle=palette.tick;c.fillText(fmt(max-i*max,1),1,y+3);}
+ for(let i=0;i<=4;i++){const t=state.timeStart+(state.timeEnd-state.timeStart)*i/4;c.fillStyle=palette.tick;c.textAlign=i===0?'left':i===4?'right':'center';c.fillText(fmt(t),timeX(t),h-4);}c.textAlign='left';
  c.save();c.beginPath();c.rect(left,top-1,cw,ch+2);c.clip();
- if(state.timeStart<0&&state.timeEnd>0){c.strokeStyle='#52657d';c.beginPath();c.moveTo(timeX(0),top);c.lineTo(timeX(0),top+ch);c.stroke();}
+ if(state.timeStart<0&&state.timeEnd>0){c.strokeStyle=palette.axis;c.beginPath();c.moveTo(timeX(0),top);c.lineTo(timeX(0),top+ch);c.stroke();}
  for(let k=0;k<state.dim;k++){
   c.strokeStyle=colors[k];c.lineWidth=1.5;c.beginPath();let connected=false;
   for(const p of points){if(!p.x){connected=false;continue;}const x=timeX(p.t),y=top+ch/2-p.x[k]/max*ch/2;connected?c.lineTo(x,y):c.moveTo(x,y);connected=true;}c.stroke();
  }
- c.strokeStyle='#adc1d382';c.setLineDash([3,3]);c.beginPath();c.moveTo(timeX(state.t),top);c.lineTo(timeX(state.t),top+ch);c.stroke();c.setLineDash([]);c.restore();
+ c.strokeStyle=palette.cursor;c.setLineDash([3,3]);c.beginPath();c.moveTo(timeX(state.t),top);c.lineTo(timeX(state.t),top+ch);c.stroke();c.setLineDash([]);c.restore();
 }
 function pause(){state.playing=false;cancelAnimationFrame(frame);$('play').textContent='▶';$('play').setAttribute('aria-label','Play animation');}
 function tick(now){if(!state.playing)return;state.t=Math.min(state.timeEnd,state.t+Math.min((now-previous)/1000,.1)*state.speed);previous=now;draw();if(state.t>=state.timeEnd)pause();else frame=requestAnimationFrame(tick);}
@@ -207,6 +209,11 @@ const tracePlane=createTraceDetPlane({canvas:$('trace-canvas'),values:$('trace-v
  pause();state.A=A;state.hover=null;$('preset').value='custom';$('matrix-error').textContent='';
  renderControls({renderSeeds});rebuild(final?1200:320);
 }});
+window.addEventListener('themechange',()=>{
+ colors=plotPalette().colors;
+ state.seeds.forEach((_,i)=>{$('seed-dot-'+i).style.background=colors[i%colors.length];});
+ draw();tracePlane.draw();
+});
 refreshRepresentativeSeeds(false);
 renderControls();rebuild();new ResizeObserver(draw).observe($('phase-canvas'));new ResizeObserver(drawChart).observe($('time-canvas'));
 // Expose the same visible workflow to browsers supporting WebMCP.

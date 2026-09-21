@@ -1,3 +1,4 @@
+import {plotPalette} from './palette.js';
 const DEFAULT_BOUNDS={tMin:-6,tMax:6,dMin:-6,dMax:10};
 export const defaultTraceBounds=()=>({...DEFAULT_BOUNDS});
 
@@ -39,22 +40,23 @@ export function createTraceDetPlane({canvas,values,status,follow,reset,onChange}
  function clearPending(){if(frame)cancelAnimationFrame(frame);frame=0;pending=null;}
  const tickStep=span=>{const raw=span/6,power=10**Math.floor(Math.log10(raw)),ratio=raw/power;return(ratio>5?10:ratio>2?5:ratio>1?2:1)*power;};
  function draw(){
+  const palette=plotPalette(),theme=palette.trace;
   const rect=canvas.getBoundingClientRect(),w=rect.width,h=rect.height,dpr=Math.min(window.devicePixelRatio||1,2);
   if(w<=56||h<=64)return;
   if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr);}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,w,h);
   const plot=tracePlot(w,h,bounds),project=plot.project,[zeroX,zeroY]=project(0,0);
   ctx.save();ctx.beginPath();ctx.rect(plot.left,plot.top,plot.width,plot.height);ctx.clip();
-  ctx.fillStyle='#33251f';ctx.fillRect(plot.left,zeroY,plot.width,plot.bottom-zeroY);
-  ctx.fillStyle='#13362f';ctx.fillRect(plot.left,plot.top,zeroX-plot.left,zeroY-plot.top);
-  ctx.fillStyle='#392c24';ctx.fillRect(zeroX,plot.top,plot.right-zeroX,zeroY-plot.top);
+  ctx.fillStyle=theme.saddle;ctx.fillRect(plot.left,zeroY,plot.width,plot.bottom-zeroY);
+  ctx.fillStyle=theme.stableNode;ctx.fillRect(plot.left,plot.top,zeroX-plot.left,zeroY-plot.top);
+  ctx.fillStyle=theme.unstableNode;ctx.fillRect(zeroX,plot.top,plot.right-zeroX,zeroY-plot.top);
   for(const side of [-1,1]){
-   const edge=side<0?bounds.tMin:bounds.tMax;ctx.fillStyle=side<0?'#172e43':'#352b40';ctx.beginPath();
+   const edge=side<0?bounds.tMin:bounds.tMax;ctx.fillStyle=side<0?theme.stableSpiral:theme.unstableSpiral;ctx.beginPath();
    ctx.moveTo(...project(0,bounds.dMax));ctx.lineTo(...project(edge,bounds.dMax));
    for(let i=0;i<=100;i++){const t=edge*(1-i/100);ctx.lineTo(...project(t,t*t/4));}ctx.closePath();ctx.fill();
   }
   // Outside this region no real 2×2 matrix can satisfy the editor's ±20 entry limit.
-  ctx.fillStyle='#07101bcc';
+  ctx.fillStyle=theme.unavailable;
   for(let x=plot.left;x<plot.right;x+=3){
    const t=bounds.tMin+(x-plot.left)/plot.width*(bounds.tMax-bounds.tMin);
    if(Math.abs(t)>40){ctx.fillRect(x,plot.top,3,plot.height);continue;}
@@ -62,21 +64,21 @@ export function createTraceDetPlane({canvas,values,status,follow,reset,onChange}
    if(upper>plot.top)ctx.fillRect(x,plot.top,3,upper-plot.top);
    if(lower<plot.bottom)ctx.fillRect(x,lower,3,plot.bottom-lower);
   }
-  ctx.lineWidth=1;ctx.strokeStyle='#a0bad519';
+  ctx.lineWidth=1;ctx.strokeStyle=theme.grid;
   const ts=tickStep(bounds.tMax-bounds.tMin),ds=tickStep(bounds.dMax-bounds.dMin);
   for(let t=Math.ceil(bounds.tMin/ts)*ts;t<=bounds.tMax;t+=ts){const [x]=project(t,0);ctx.beginPath();ctx.moveTo(x,plot.top);ctx.lineTo(x,plot.bottom);ctx.stroke();}
   for(let d=Math.ceil(bounds.dMin/ds)*ds;d<=bounds.dMax;d+=ds){const [,y]=project(0,d);ctx.beginPath();ctx.moveTo(plot.left,y);ctx.lineTo(plot.right,y);ctx.stroke();}
-  ctx.strokeStyle='#7a91a7';ctx.beginPath();ctx.moveTo(plot.left,zeroY);ctx.lineTo(plot.right,zeroY);ctx.moveTo(zeroX,plot.top);ctx.lineTo(zeroX,plot.bottom);ctx.stroke();
-  ctx.strokeStyle='#bea5ee';ctx.lineWidth=1.5;ctx.beginPath();
+  ctx.strokeStyle=theme.axis;ctx.beginPath();ctx.moveTo(plot.left,zeroY);ctx.lineTo(plot.right,zeroY);ctx.moveTo(zeroX,plot.top);ctx.lineTo(zeroX,plot.bottom);ctx.stroke();
+  ctx.strokeStyle=theme.curve;ctx.lineWidth=1.5;ctx.beginPath();
   for(let i=0;i<=200;i++){const t=bounds.tMin+(bounds.tMax-bounds.tMin)*i/200,p=project(t,t*t/4);i?ctx.lineTo(...p):ctx.moveTo(...p);}ctx.stroke();
-  ctx.strokeStyle='#61dfbd';ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(zeroX,plot.top);ctx.lineTo(zeroX,zeroY);ctx.stroke();ctx.setLineDash([]);
+  ctx.strokeStyle=theme.center;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(zeroX,plot.top);ctx.lineTo(zeroX,zeroY);ctx.stroke();ctx.setLineDash([]);
   const label=(lines,t,d,color)=>{const p=project(t,d);ctx.fillStyle=color;ctx.textAlign='center';ctx.font='12px sans-serif';lines.forEach((line,i)=>ctx.fillText(line,p[0],p[1]+i*15));};
   const tLabel=Math.min(bounds.tMax*.43,Math.sqrt(bounds.dMax)*.8);
-  label(['Stable','spiral'],-tLabel,bounds.dMax*.76,'#91b8d8');label(['Unstable','spiral'],tLabel,bounds.dMax*.76,'#d2acd8');
-  for(const side of [-1,1]){const t=side*bounds.tMax*.72;label([side<0?'Stable':'Unstable','node'],t,Math.min(bounds.dMax*.32,t*t/10),side<0?'#83c4ac':'#d7ae86');}
-  label(['Saddle'],0,bounds.dMin*.62,'#d3a185');
-  const point=project(current.t,current.d);ctx.shadowColor='#61dfbd';ctx.shadowBlur=9;ctx.fillStyle='#61dfbd';ctx.strokeStyle='#eafff8';ctx.lineWidth=2;ctx.beginPath();ctx.arc(point[0],point[1],5,0,2*Math.PI);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
-  ctx.restore();ctx.font='11px monospace';ctx.fillStyle='#8da2b9';ctx.textAlign='center';
+  label(['Stable','spiral'],-tLabel,bounds.dMax*.76,theme.stableSpiralText);label(['Unstable','spiral'],tLabel,bounds.dMax*.76,theme.unstableSpiralText);
+  for(const side of [-1,1]){const t=side*bounds.tMax*.72;label([side<0?'Stable':'Unstable','node'],t,Math.min(bounds.dMax*.32,t*t/10),side<0?theme.stableNodeText:theme.unstableNodeText);}
+  label(['Saddle'],0,bounds.dMin*.62,theme.saddleText);
+  const point=project(current.t,current.d);ctx.shadowColor=theme.point;ctx.shadowBlur=9;ctx.fillStyle=theme.point;ctx.strokeStyle=theme.pointOutline;ctx.lineWidth=2;ctx.beginPath();ctx.arc(point[0],point[1],5,0,2*Math.PI);ctx.fill();ctx.stroke();ctx.shadowBlur=0;
+  ctx.restore();ctx.font='11px monospace';ctx.fillStyle=palette.tick;ctx.textAlign='center';
   for(let t=Math.ceil(bounds.tMin/ts)*ts;t<=bounds.tMax;t+=ts)ctx.fillText(number(t),project(t,0)[0],plot.bottom+16);
   ctx.textAlign='right';for(let d=Math.ceil(bounds.dMin/ds)*ds;d<=bounds.dMax;d+=ds)ctx.fillText(number(d),plot.left-7,project(0,d)[1]+4);
   ctx.font='12px sans-serif';ctx.textAlign='left';ctx.fillText('Determinant Δ',plot.left,15);ctx.textAlign='center';ctx.fillText('Trace τ',(plot.left+plot.right)/2,h-4);ctx.textAlign='left';

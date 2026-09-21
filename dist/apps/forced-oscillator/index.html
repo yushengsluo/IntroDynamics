@@ -4,10 +4,17 @@
   <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Forced oscillator — Interactive illustrations</title>
   <meta name="description" content="Explore harmonic and Duffing oscillators. Change damping, linear and cubic stiffness, and driving frequency to see motion and phase portraits.">
+  <script src="../../assets/js/theme.js"></script>
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="../../assets/css/app-shell.css">
+  <link rel="stylesheet" href="../../assets/css/theme.css">
 </head>
 <body>
-  <header class="app-header"><a href="../../index.html" class="back-link">← Back to examples</a><span class="app-name"><span aria-hidden="true">∿</span> Forced oscillator</span><span class="header-note" id="model-note">Second-order linear ODE</span></header>
+  <header class="app-header">
+    <a class="back-link" href="../../index.html"><span aria-hidden="true">←</span> Back</a>
+    <div class="app-identity"><span class="app-mark" aria-hidden="true">∿</span><strong class="app-name">Forced oscillator</strong></div>
+    <div class="header-tools"><button id="guide-button" class="quiet-button" aria-haspopup="dialog" aria-controls="guide"><span aria-hidden="true">ⓘ</span> How to explore</button><button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color mode"><span data-theme-icon aria-hidden="true">☀</span></button></div>
+  </header>
   <div class="workspace">
     <aside class="controls" aria-label="Oscillator controls">
       <div class="section-heading">THE EQUATION</div>
@@ -49,6 +56,20 @@
       <footer>Initial conditions specify x(0) and x′(0). Time and coefficients use consistent, arbitrary units.</footer>
     </main>
   </div>
+  <dialog id="guide" class="explore-guide" aria-labelledby="guide-title">
+    <form method="dialog">
+      <div class="guide-heading"><h2 id="guide-title">Explore your oscillator</h2><button class="guide-close" aria-label="Close guide">×</button></div>
+      <p>Follow a driven spring and mass through its motion, phase portrait, and displacement over time. Every trajectory shares the same equation and starts from its own position and velocity at <strong>t = 0</strong>.</p>
+      <ul>
+        <li><strong>Choose an equation or preset.</strong> Start with a harmonic oscillator or switch to Duffing, which adds the nonlinear spring term βx³. Adjust damping b, stiffness k, driving frequency ω, and Duffing cubic stiffness β.</li>
+        <li><strong>Compare initial conditions.</strong> Click the phase portrait to add (x(0), x′(0)), with up to 12 trajectories. Select a trajectory to edit its initial values and follow it in the motion panel. Coefficient changes apply to every trajectory.</li>
+        <li><strong>Explore through time.</strong> Set Start time and End time anywhere within −500…500, with the start before the end. Initial conditions stay at t = 0, even for negative times. Press Play, drag the time slider, or change playback speed. Bright trails and filled dots move; hollow circles mark the initial conditions.</li>
+        <li><strong>Read the response.</strong> Compare displacement with the forcing and, for harmonic motion, the periodic response. The lower plot shows the harmonic frequency response or the Duffing spring's unforced potential. The phase vector field changes with the current forcing phase.</li>
+        <li><strong>Try chaotic motion.</strong> Choose “Duffing: chaotic motion” and press Play. Two trajectories start only 0.00001 apart; their dots overlap at first before the paths separate. This preset uses t = 0…250 to show their different long-term motion.</li>
+      </ul>
+      <button class="primary-button">Got it</button>
+    </form>
+  </dialog>
   <script src="js/boot.js" defer></script>
 </body>
 </html>
