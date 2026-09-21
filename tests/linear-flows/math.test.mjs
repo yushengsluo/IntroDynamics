@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {expm,matVec,analyze,eigenvalues,trajectory} from '../dist/math.js';
+import {expm,matVec,analyze,eigenvalues,trajectory,trajectoriesInInterval} from '../../dist/apps/linear-flows/js/math.js';
 const close=(a,b,tol=1e-8)=>assert.ok(Math.abs(a-b)<=tol*Math.max(1,Math.abs(b)),`${a} ≠ ${b}`);
 const vector=(a,b)=>a.forEach((v,i)=>close(v,b[i]));
 const spectra=(A,expected)=>{const got=eigenvalues(A).sort((a,b)=>a.re-b.re||a.im-b.im);expected.sort((a,b)=>a[0]-b[0]||a[1]-b[1]);got.forEach((v,i)=>{close(v.re,expected[i][0]);close(v.im,expected[i][1]);});};
@@ -17,4 +17,22 @@ spectra([[-.25,-1.4,0],[1.4,-.25,0],[0,0,-.55]],[[-.55,0],[-.25,-1.4],[-.25,1.4]
 spectra([[1e-6,0,0],[0,2e-6,0],[0,0,3e-6]],[[1e-6,0],[2e-6,0],[3e-6,0]]);
 const orbit=trajectory(rotation,[3,0],30);close(Math.hypot(...orbit.at(-1).x),3);assert.equal(orbit.length,901);
 const growth=trajectory([[20,0],[0,20]],[1,1],30);assert.ok(growth.length<901);assert.ok(growth.every(p=>p.x.every(Number.isFinite)));
-console.log('Passed: analytic solutions, 2D/3D spectra, repeated eigenvalues, stability, long rotation, and bounded growth.');
+// Negative time follows the same solution anchored at x(0).
+const backwardRotation=trajectoriesInInterval(rotation,[[1,0]],-Math.PI/2,Math.PI/2,100)[0];
+vector(backwardRotation[0].x,[0,-1]);vector(backwardRotation.at(-1).x,[0,1]);
+const twoSidedShear=trajectoriesInInterval(shear,[[0,1]],-20,20,100)[0];
+for(const p of twoSidedShear)vector(p.x,[p.t,1]);
+assert.equal(twoSidedShear.filter(p=>p.t===0).length,1);
+const asymmetrical=trajectoriesInInterval(shear,[[0,1]],-3,7,11)[0];
+assert.equal(asymmetrical.filter(p=>p.t===0).length,1);
+const negativeOnly=trajectoriesInInterval(shear,[[0,1]],-20,-5,20)[0];
+assert.equal(negativeOnly[0].t,-20);assert.equal(negativeOnly.at(-1).t,-5);
+for(const p of negativeOnly)vector(p.x,[p.t,1]);
+const saddlePaths=trajectoriesInInterval([[-1,0],[0,1]],[[1,1]],-20,20,1000)[0];
+assert.equal(saddlePaths[0].x,null);assert.equal(saddlePaths.at(-1).x,null);
+vector(saddlePaths.find(p=>p.t===0).x,[1,1]);
+assert.ok(saddlePaths.some(p=>p.t<0&&p.x));assert.ok(saddlePaths.some(p=>p.t>0&&p.x));
+const zeroPath=trajectoriesInInterval([[0,0],[0,0]],[[2,-3]],-20,20,10)[0];
+for(const p of zeroPath)vector(p.x,[2,-3]);
+assert.throws(()=>trajectoriesInInterval(shear,[[0,1]],20,-20),RangeError);
+console.log('Passed: analytic solutions, spectra, stability, negative/positive time, zero anchoring, and independent clipping.');

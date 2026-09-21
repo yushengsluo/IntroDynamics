@@ -9,6 +9,23 @@ export function expm(A,t){
  for(let k=0;k<s;k++)E=multiply(E,E);return E;
 }
 export function trajectory(A,x,T,steps=900){const dt=T/steps,M=expm(A,dt),points=[{t:0,x:[...x]}];let current=[...x];for(let i=1;i<=steps;i++){current=matVec(M,current);if(current.some(v=>!Number.isFinite(v)||Math.abs(v)>1e5))break;points.push({t:i*dt,x:current});}return points;}
+// Evaluate each sample from x(0). Growth at negative times must not erase
+// a valid forward branch, and omitted samples must not join across a gap.
+export function trajectoriesInInterval(A,seeds,start,end,steps=1200,evaluators=[]){
+ if(!Number.isFinite(start)||!Number.isFinite(end)||start>=end)throw new RangeError('Start time must be less than end time.');
+ const times=Array.from({length:steps+1},(_,i)=>i===steps?end:start+(end-start)*i/steps);
+ if(start<0&&end>0&&!times.includes(0))times.push(0);
+ times.sort((a,b)=>a-b);
+ const paths=seeds.map(()=>[]);
+ for(const t of times){
+  const M=t===0?null:expm(A,t);
+  seeds.forEach((seed,i)=>{
+   const x=t===0||seed.every(v=>v===0)?[...seed]:(evaluators[i]?.(t)??matVec(M,seed));
+   paths[i].push({t,x:x.every(v=>Number.isFinite(v)&&Math.abs(v)<=1e5)?x:null});
+  });
+ }
+ return paths;
+}
 export function eigenvalues(A){
  const scale=Math.max(...A.flat().map(Math.abs));if(scale===0)return A.map(()=>({re:0,im:0}));const B=A.map(r=>r.map(v=>v/scale)),tr=trace(B),det=determinant(B);let roots;
  if(A.length===2){const half=tr/2,h=(B[0][0]-B[1][1])/2,d=h*h+B[0][1]*B[1][0];if(d>=0){const large=half+(half<0?-1:1)*Math.sqrt(d),small=large===0?0:det/large;roots=[{re:large,im:0},{re:small,im:0}];}else roots=[{re:half,im:Math.sqrt(-d)},{re:half,im:-Math.sqrt(-d)}];}

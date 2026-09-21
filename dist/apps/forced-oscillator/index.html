@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Forced oscillator — Interactive illustrations</title>
+  <meta name="description" content="Explore harmonic and Duffing oscillators. Change damping, linear and cubic stiffness, and driving frequency to see motion and phase portraits.">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="app-header"><a href="../../index.html" class="back-link">← Back to examples</a><span class="app-name"><span aria-hidden="true">∿</span> Forced oscillator</span><span class="header-note" id="model-note">Second-order linear ODE</span></header>
+  <div class="workspace">
+    <aside class="controls" aria-label="Oscillator controls">
+      <div class="section-heading">THE EQUATION</div>
+      <div class="equation" id="equation">x″ + bx′ + kx = cos(ωt)</div>
+      <p class="muted compact">Unit mass · unit forcing amplitude</p>
+      <label for="model" class="field-label">Equation</label>
+      <select id="model"><option value="harmonic">Harmonic oscillator</option><option value="duffing">Duffing oscillator</option></select>
+      <label for="preset" class="field-label">Explore a case</label>
+      <select id="preset"><optgroup label="Harmonic"><option value="damped">Damped response</option><option value="near">Near resonance</option><option value="beats">Undamped beats</option><option value="resonance">Undamped resonance</option><option value="critical">Critical damping</option><option value="overdamped">Overdamped</option></optgroup><optgroup label="Duffing"><option value="duffing-hardening">Duffing: hardening spring</option><option value="duffing-double-well">Duffing: double well</option><option value="duffing-softening">Duffing: softening spring</option><option value="duffing-chaos">Duffing: chaotic motion</option></optgroup><option value="custom">Custom</option></select>
+      <section class="control-section"><h2>Coefficients</h2>
+        <div class="parameter"><div class="parameter-top"><label for="b">Damping <span>b</span></label><input id="b" type="number" min="0" max="10" step="any" value="0.4" aria-describedby="input-error"></div><input id="b-slider" type="range" min="0" max="10" step="0.01" value="0.4" aria-label="Damping slider"></div>
+        <div class="parameter"><div class="parameter-top"><label for="k">Stiffness <span>k</span></label><input id="k" type="number" min="0.1" max="25" step="any" value="1" aria-describedby="input-error"></div><input id="k-slider" type="range" min="0.1" max="25" step="0.01" value="1" aria-label="Stiffness slider"></div>
+        <div class="parameter" id="beta-control" hidden><div class="parameter-top"><label for="beta">Cubic stiffness <span>β</span></label><input id="beta" type="number" min="-5" max="5" step="any" value="1" aria-describedby="input-error"></div><input id="beta-slider" type="range" min="-5" max="5" step="0.01" value="1" aria-label="Cubic stiffness slider"></div>
+        <div class="parameter"><div class="parameter-top"><label for="omega">Driving frequency <span>ω</span></label><input id="omega" type="number" min="0" max="10" step="any" value="0.8" aria-describedby="input-error"></div><input id="omega-slider" type="range" min="0" max="10" step="0.01" value="0.8" aria-label="Driving frequency slider"></div>
+      </section>
+      <section class="control-section"><h2>Trajectories <span class="muted" id="trajectory-count">1 / 12</span></h2>
+        <label for="trajectory-select" class="field-label">Selected initial condition (x, x′) at t = 0</label>
+        <select id="trajectory-select"><option value="1">1 · (0, 0)</option></select>
+        <div class="initial-fields"><label for="x0">Position x(0)<input id="x0" type="number" min="-1000000" max="1000000" step="any" value="0" aria-describedby="input-error"></label><label for="v0">Velocity x′(0)<input id="v0" type="number" min="-1000000" max="1000000" step="any" value="0" aria-describedby="input-error"></label></div>
+        <div class="trajectory-actions"><button id="add-trajectory" class="secondary-button">Add a copy</button><button id="remove-trajectory" class="secondary-button" disabled>Remove selected</button><button id="keep-trajectory" class="secondary-button" disabled>Keep selected only</button></div>
+        <p class="time-hint">Click the phase portrait to add a trajectory, or add a copy and edit its initial values. Coefficient changes apply to every trajectory.</p>
+        <p id="trajectory-status" class="time-hint" role="status"></p>
+      </section>
+      <section class="control-section"><h2>Time range</h2><div class="initial-fields"><label for="start-time">Start time<input id="start-time" type="number" min="-500" max="500" step="any" value="0" aria-describedby="input-error"></label><label for="duration">End time<input id="duration" type="number" min="-500" max="500" step="any" value="40" aria-describedby="input-error"></label></div><p class="time-hint">Choose any interval within −500…500. Initial conditions remain at t = 0.</p></section>
+      <section class="control-section"><h2>Display</h2><label class="check-row"><input id="show-force" type="checkbox" checked> Show forcing cos(ωt)</label><label class="check-row" id="particular-control"><input id="show-particular" type="checkbox" checked> Compare periodic response</label><label class="check-row"><input id="show-field" type="checkbox" checked> Show phase vector field</label></section>
+      <p id="input-error" class="error" role="status"></p><p id="load-error" class="error" role="alert"></p>
+      <button id="reset" class="secondary-button">Reset illustration</button>
+    </aside>
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">DRIVEN MOTION</p><h1 id="page-title">Damped, forced oscillator</h1></div><span id="regime" class="badge">Underdamped</span></div>
+      <div class="top-panels">
+        <section class="panel motion-panel" aria-labelledby="motion-heading"><div class="panel-heading"><h2 id="motion-heading">Motion</h2><span class="subtle" id="selected-trajectory">Following trajectory 1</span></div><canvas id="motion-canvas" aria-label="Animated spring and mass, showing displacement and driving force"></canvas><div class="readouts"><span>x <strong id="current-x">0.000</strong></span><span>x′ <strong id="current-v">0.000</strong></span><span>F <strong id="current-force">1.000</strong></span></div><p class="plot-note">Spring and damper schematic · displacement scaled to the plotted range.</p></section>
+        <section class="panel phase-panel" aria-labelledby="phase-heading"><div class="panel-heading"><h2 id="phase-heading">Phase portrait</h2><span class="subtle">(x, x′)</span></div><canvas id="phase-canvas" aria-label="Position versus velocity phase portrait. Click to add an initial condition at t = 0." aria-describedby="phase-hint"></canvas><div id="trajectory-legend" class="trajectory-legend" aria-label="Trajectory colors"></div><p class="plot-note" id="phase-hint">Click to add (x(0), x′(0)). Bright trails and filled dots animate for every trajectory. Hollow circles stay at t = 0. The vector field follows the current forcing phase.</p></section>
+      </div>
+      <section class="playback" aria-label="Animation controls"><button id="play" class="play-button" aria-label="Play animation">▶ Play</button><button id="restart" class="icon-button" aria-label="Restart animation" title="Restart animation">↺</button><output id="time-label" for="timeline">t = 0.00</output><input id="timeline" type="range" min="0" max="40" step="0.01" value="0" aria-label="Simulation time"><select id="speed" aria-label="Playback speed"><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="4">4×</option></select></section>
+      <section class="panel time-panel" aria-labelledby="time-heading"><div class="panel-heading"><h2 id="time-heading">Displacement over time</h2><div class="legend"><span class="solution">Trajectories x(t)</span><span id="force-legend" class="forcing">cos(ωt)</span><span id="particular-legend" class="particular">Periodic response</span></div></div><canvas id="time-canvas" aria-label="Displacement, driving force, and periodic particular response over time"></canvas><p id="range-note" class="plot-note" role="status"></p><p id="comparison-note" class="plot-note"></p></section>
+      <div class="bottom-panels"><section class="panel response-panel" aria-labelledby="response-heading"><div class="panel-heading"><h2 id="response-heading">Frequency response</h2><span class="subtle" id="response-subtitle">Amplitude · log scale</span></div><canvas id="response-canvas" aria-label="Periodic response amplitude versus driving frequency, with the current frequency marked"></canvas><p class="plot-note" id="response-note">Same b and k, varying drive Ω. Amplitudes above 10³ are clipped.</p></section>
+      <section class="panel insight-panel" aria-labelledby="insight-heading"><div class="panel-heading"><h2 id="insight-heading">What to look for</h2></div><p id="insight"></p><dl class="metrics"><div><dt id="frequency-label">Natural frequency √k</dt><dd id="natural-frequency"></dd></div><div><dt id="amplitude-label">Periodic amplitude</dt><dd id="response-amplitude"></dd></div><div><dt id="phase-label">Phase lag</dt><dd id="phase-lag"></dd></div></dl><p class="formula" id="response-formula">R = 1 / √((k − ω²)² + b²ω²)</p></section></div>
+      <footer>Initial conditions specify x(0) and x′(0). Time and coefficients use consistent, arbitrary units.</footer>
+    </main>
+  </div>
+  <script src="js/boot.js" defer></script>
+</body>
+</html>
