@@ -29,28 +29,4 @@ class DevelopmentHandler(SimpleHTTPRequestHandler):
         except OSError:
             self.send_error(404, "File not found")
             return None
-        # Read before sending headers: moved/edited files may have stale stat
-        # sizes. The response length must match the bytes actually being served.
-        self.send_response(200)
-        self.send_header("Content-Type", self.guess_type(str(path)))
-        self.send_header("Content-Length", str(len(content)))
-        self.end_headers()
-        return BytesIO(content)
-
-    def end_headers(self):
-        self.send_header("Cache-Control", "no-store")
-        super().end_headers()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--port", type=int, default=5173)
-    args = parser.parse_args()
-    directory = Path(__file__).resolve().parents[1] / "dist"
-    handler = partial(DevelopmentHandler, directory=str(directory))
-    with ThreadingHTTPServer(("127.0.0.1", args.port), handler) as server:
-        print(f"Examples: http://127.0.0.1:{args.port}/", flush=True)
-        try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            pass
+        # Read befor
