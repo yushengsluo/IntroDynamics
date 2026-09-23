@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Variational equations — Interactive illustrations</title>
+  <meta name="description" content="Compare nearby solutions of 2D and 3D differential equations with a moving variational vector. Explore linear systems, nonlinear oscillations, and chaotic flows.">
+  <script src="../../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="../../assets/css/app-shell.css">
+  <link rel="stylesheet" href="../../assets/css/theme.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="back-link" href="../../index.html"><span aria-hidden="true">←</span> Back</a>
+    <div class="app-identity"><span class="app-mark" aria-hidden="true">∿</span><strong class="app-name">Variational equations</strong></div>
+    <div class="header-tools"><button id="guide-button" class="quiet-button" aria-haspopup="dialog" aria-controls="guide"><span aria-hidden="true">ⓘ</span> How to explore</button><button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color mode"><span data-theme-icon aria-hidden="true">☀</span></button></div>
+  </header>
+  <div class="workspace">
+    <aside class="controls" aria-label="System and initial conditions">
+      <p class="eyebrow">NEARBY SOLUTIONS</p>
+      <div class="dimension-control" role="group" aria-label="System dimension"><button id="dim-2" aria-pressed="true" class="selected">2D system</button><button id="dim-3" aria-pressed="false">3D system</button></div>
+      <label class="field-label" for="preset">Explore an example</label>
+      <select id="preset"></select>
+      <div id="equations" class="equations" aria-label="System equations"></div>
+      <div id="parameters" class="parameters"></div>
+      <p id="direction-note" class="hint direction-note" hidden></p>
+      <section class="control-section">
+        <h2><span class="color-dot base-color"></span> Base initial condition</h2>
+        <p class="hint">x₀ = x(0)</p>
+        <div id="base-fields" class="coordinate-fields"></div>
+      </section>
+      <section class="control-section">
+        <h2><span id="comparison-dot" class="color-dot comparison-color"></span> Comparison trajectories <span id="comparison-count" class="count">1 / 8</span></h2>
+        <label class="field-label" for="comparison-select">Selected initial condition y₀</label>
+        <select id="comparison-select"></select>
+        <div id="comparison-fields" class="coordinate-fields"></div>
+        <div class="comparison-actions"><button id="add-comparison" class="secondary-button">+ Add nearby</button><button id="remove-comparison" class="secondary-button">Remove selected</button></div>
+        <p class="hint">Click the portrait to add a comparison. Each one has its own variational vector from the same base trajectory. Select a comparison for the separation chart; enable all arrows to follow them together.</p>
+        <div id="initial-vector-panel" class="initial-vector"><span>η(0) = y₀ − x₀</span><output id="initial-vector"></output></div>
+      </section>
+      <section class="control-section">
+        <h2>Time range</h2>
+        <div class="time-fields"><label for="time-start">Start t<input id="time-start" type="number" min="-50" max="100" step="any" value="0"></label><label for="time-end">End t<input id="time-end" type="number" min="-50" max="100" step="any" value="20"></label></div>
+        <p class="hint">Within −50…100. Initial conditions always refer to t = 0.</p>
+      </section>
+      <section class="control-section view-options">
+        <h2>Display</h2>
+        <label><input id="show-field" type="checkbox" checked> Vector field</label>
+        <label><input id="show-paths" type="checkbox" checked> Full trajectories</label>
+        <label><input id="show-all-variations" type="checkbox"> All variational arrows</label>
+        <label><input id="show-separation" type="checkbox" checked> Actual displacement segment</label>
+        <label><input id="show-prediction" type="checkbox"> Linearized prediction path</label>
+      </section>
+      <p id="input-error" class="error" role="status"></p>
+      <button id="reset" class="secondary-button reset-button">Reset example</button>
+    </aside>
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">HOW DOES A SMALL CHANGE EVOLVE?</p><h1 id="system-title">Variational equations</h1></div><span id="system-kind" class="badge">2D system</span></div>
+      <p id="system-description" class="intro"></p>
+      <section id="lyapunov-summary" class="lyapunov-summary" aria-label="Lyapunov exponents" hidden>
+        <div class="lyapunov-values"><strong id="lyapunov-kind"></strong><span id="lyapunov-largest"></span><span id="lyapunov-spectrum"></span></div>
+        <p id="lyapunov-note"></p>
+      </section>
+      <section class="equation-strip" aria-label="Variational equation"><span>Base <strong>x′ = f(x)</strong></span><span class="variation-label">Variation <strong>η′ = Df(x(t))η</strong></span><span>Prediction <strong>y(t) ≈ x(t) + η(t)</strong></span></section>
+      <section class="panel portrait-panel" aria-labelledby="phase-heading">
+        <div class="panel-heading"><h2 id="phase-heading">Phase portrait</h2><div class="plot-actions"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">−</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">+</button><button id="reset-view" class="icon-button" aria-label="Reset view" title="Reset view">⌖</button></div></div>
+        <div id="slice-controls" class="slice-controls" hidden><label for="slice-axis">Place on <select id="slice-axis"><option value="2">x₁–x₂ plane</option><option value="1">x₁–x₃ plane</option><option value="0">x₂–x₃ plane</option></select></label><label for="slice-value"><span id="slice-label">x₃ =</span><input id="slice-value" type="number" value="0" step="any" min="-1000" max="1000" aria-label="Placement plane coordinate"></label><span>Drag to rotate</span></div>
+        <canvas id="phase-canvas" tabindex="0" aria-label="Phase portrait. Click to add a comparison trajectory. Use plus and minus to zoom." aria-describedby="phase-hint"></canvas>
+        <div class="plot-legend"><span class="base-legend">Base x(t)</span><span id="comparison-legend" class="comparison-legend">Comparison y(t)</span><span id="stable-legend" class="stable-legend" hidden>Stable trajectory</span><span id="unstable-legend" class="unstable-legend" hidden>Unstable trajectory</span><span id="variation-legend" class="variation-legend">Variational arrow η(t)</span></div>
+        <p id="phase-hint" class="plot-note">Click to add a comparison · scroll to zoom. The orange arrow starts at the moving base point.</p>
+        <p id="placement-status" class="plot-note status" role="status"></p>
+        <p id="arrow-status" class="plot-note status" role="status"></p>
+        <div class="playback"><button id="play" class="play-button" aria-label="Play animation">▶ Play</button><button id="restart" class="icon-button" aria-label="Restart animation" title="Restart animation">↺</button><output id="time-label" for="timeline" aria-live="off">t = 0.00</output><input id="timeline" type="range" min="0" max="20" step="0.01" value="0" aria-label="Simulation time"><select id="speed" aria-label="Playback speed"><option value="0.1">0.1×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option></select><button id="initial-time" class="text-button">t = 0</button></div>
+      </section>
+      <div class="bottom-panels">
+        <section class="panel growth-panel" aria-labelledby="growth-heading"><div class="panel-heading"><h2 id="growth-heading">Separation &amp; approximation error</h2><span class="subtle">Selected comparison</span></div><canvas id="growth-canvas" aria-label="Actual separation, variational magnitude, and approximation error over time"></canvas><div class="plot-legend small"><span id="actual-legend" class="comparison-legend">Actual |y − x|</span><span id="growth-variation-legend" class="variation-legend">Linearized |η|</span><span class="error-legend">Error |y − x − η|</span></div></section>
+        <section class="panel insight-panel" aria-labelledby="insight-heading"><div class="panel-heading"><h2 id="insight-heading">Along the base trajectory</h2></div><p class="jacobian-label">Df(x(t)) · current Jacobian</p><div id="jacobian" class="jacobian" aria-label="Current Jacobian matrix"></div><dl class="metrics"><div><dt>Actual separation</dt><dd id="actual-distance">—</dd></div><div><dt>Variational magnitude</dt><dd id="variation-distance">—</dd></div><div><dt>Approximation error</dt><dd id="approximation-error">—</dd></div></dl><p class="plot-note">The arrow keeps its true length. Its tip predicts the comparison point; the gap between them is the linearization error.</p></section>
+      </div>
+      <p id="solver-status" class="solver-status" role="status"></p><p id="load-error" class="error" role="alert"></p>
+      <footer>The variational equation is linear along a chosen solution. For nonlinear systems it is a first-order approximation, most accurate for small initial displacements over short times.</footer>
+    </main>
+  </div>
+  <dialog id="guide" class="explore-guide" aria-labelledby="guide-title"><form method="dialog"><div class="guide-heading"><h2 id="guide-title">Explore nearby solutions</h2><button class="guide-close" aria-label="Close guide">×</button></div><p>The base trajectory solves <strong>x′ = f(x)</strong>. A comparison solves the same equation from a different initial point y₀. The variational vector solves <strong>η′ = Df(x(t))η</strong>, starting from <strong>η(0) = y₀ − x₀</strong>.</p><ul><li><strong>Follow the orange arrow.</strong> Its tail stays on the moving base point. At t = 0 its tip is exactly the comparison initial point. Later, the tip x(t) + η(t) is the linearized prediction, which need not lie on the actual comparison trajectory.</li><li><strong>Choose an example.</strong> Linear flows make the prediction exact up to numerical error. Pendulum, Van der Pol, and Duffing examples show nonlinear effects. Explore Lorenz and Rössler flows in 3D to see sensitive dependence.</li><li><strong>Compare Lyapunov exponents.</strong> The preset menu includes positive, negative, and zero collections in both dimensions. Their e

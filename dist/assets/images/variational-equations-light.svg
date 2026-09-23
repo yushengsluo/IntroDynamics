@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none">
+<rect width="400" height="300" fill="#fafafa"/>
+<defs><pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse"><path d="M30 0H0V30" stroke="#e0e0e0" stroke-width=".7"/></pattern></defs>
+<rect width="400" height="300" fill="url(#grid)"/>
+<path d="M20 166H380M183 60V284" stroke="#939393"/>
+<path d="M79 168C64 101 132 62 216 86C322 116 319 220 226 243C145 263 69 211 79 168Z" stroke="#087f66" stroke-width="2"/>
+<path d="M70 161C34 78 126 46 228 71C354 103 366 222 254 263C140 303 35 220 70 161Z" stroke="#7651b7" stroke-width="2"/>
+<path d="M279 202L328 219" stroke="#a8580c" stroke-width="2.8"/>
+<path d="M319 209L328 219L315 222" stroke="#a8580c" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M328 219L330 228" stroke="#5e666e" stroke-dasharray="3 3"/>
+<circle cx="279" cy="202" r="4.5" fill="#087f66"/>
+<circle cx="330" cy="228" r="4.5" fill="#7651b7"/>
+<circle cx="79" cy="168" r="4" fill="#fafafa" stroke="#087f66" stroke-width="1.5"/>
+<circle cx="70" cy="161" r="4" fill="#fafafa" stroke="#7651b7" stroke-width="1.5"/>
+<text x="297" y="197" fill="#a8580c" font-family="Georgia,serif" font-size="18">η(t)</text>
+<text x="242" y="191" fill="#087f66" font-family="Georgia,serif" font-size="15">x(t)</text>
+<text x="339" y="240" fill="#7651b7" font-family="Georgia,serif" font-size="15">y(t)</text>
+</svg>
