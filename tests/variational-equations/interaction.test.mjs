@@ -185,4 +185,105 @@ fire('dim-2', 'click'); flush(); assert.equal($('preset').value, 'pendulum'); as
 fire('reset', 'click'); flush(); assert.equal(count(), 1); assert.equal($('time-label').textContent, 't = 0.00'); assert.equal($('load-error').textContent, '');
 // Exact spectra follow the selected model and valid coefficient edits.
 assert.equal($('lyapunov-summary').hidden, true, 'Nonlinear presets do not inherit an exact linear spectrum');
-for (const [id, sign,
+for (const [id, sign, largest] of [['unstable-node', 'Positive', '+0.6'], ['contracting-spiral', 'Negative', '-0.2'], ['center', 'Zero', '0'], ['shear', 'Zero', '0']]) {
+ fire('preset', 'change', id); flush();
+ assert.equal($('lyapunov-summary').hidden, false);
+ assert.equal($('lyapunov-kind').textContent, sign + ' Lyapunov exponent');
+ assert.equal($('lyapunov-largest').textContent, 'λmax = ' + largest);
+ assert.ok($('lyapunov-note').textContent.length > 0);
+}
+fire('preset', 'change', 'unstable-node'); fire('parameter-a', 'input', .8); flush();
+assert.equal($('lyapunov-largest').textContent, 'λmax = +0.8');
+fire('parameter-a', 'input', ''); flush();
+assert.equal($('lyapunov-largest').textContent, 'λmax = +0.8', 'Incomplete coefficient edits preserve the valid spectrum');
+fire('dim-3', 'click'); flush();
+assert.equal($('lyapunov-summary').hidden, true, 'Switching to Lorenz hides the previous linear spectrum');
+for (const [id, sign] of [['expanding-spiral-3d', 'Positive'], ['stable-node-3d', 'Negative'], ['neutral-rotation-3d', 'Zero']]) {
+ fire('preset', 'change', id); flush();
+ assert.equal($('lyapunov-kind').textContent, sign + ' Lyapunov exponent');
+ assert.equal($('lyapunov-summary').hidden, false);
+ assert.equal(coordinates('base').length, 3);
+ assert.equal($('approximation-error').textContent, '0');
+}
+fire('preset', 'change', 'spiral-3d'); fire('parameter-a', 'input', 0); flush();
+assert.equal($('lyapunov-kind').textContent, 'Zero Lyapunov exponent', 'The label updates at the zero boundary');
+assert.equal($('lyapunov-spectrum').textContent, 'Exact spectrum: (0, 0, -0.3)');
+fire('parameter-a', 'input', .2); flush();
+assert.equal($('lyapunov-kind').textContent, 'Negative Lyapunov exponent');
+assert.equal($('lyapunov-spectrum').textContent, 'Exact spectrum: (-0.2, -0.2, -0.3)');
+fire('dim-2', 'click'); flush();
+assert.equal($('lyapunov-summary').hidden, true);
+
+// Directional examples keep a contracting and expanding comparison together.
+const comparisonLabels = () => $('comparison-select').children.map(option => option.textContent);
+const directionalArrow = color => phase().paths.find(path => path.color === color && path.width === 2.4);
+const selectComparison = index => {fire('comparison-select', 'change', index); flush(); return coordinates('comparison');};
+const assertDirectionalPair = () => {
+ assert.equal(count(), 2);
+ assert.match(comparisonLabels()[0], /\bStable\b/i);
+ assert.match(comparisonLabels()[1], /\bUnstable\b/i);
+ assert.equal($('show-all-variations').checked, true);
+ assert.equal($('stable-legend').hidden, false);
+ assert.equal($('unstable-legend').hidden, false);
+ assert.ok(directionalArrow('#77c9ef'), 'The stable tangent is visible');
+ assert.ok(directionalArrow('#f6b77b'), 'The unstable tangent is visible');
+};
+fire('dim-3', 'click'); fire('preset', 'change', 'saddle-3d'); flush();
+assertDirectionalPair();
+assert.equal(coordinates('base').length, 3);
+assert.match($('direction-note').textContent, /contract/i);
+const stableArrow = structuredClone(directionalArrow('#77c9ef').points);
+const unstableArrow = structuredClone(directionalArrow('#f6b77b').points);
+selectComparison(1);
+assert.deepEqual(directionalArrow('#77c9ef').points, stableArrow, 'Changing the detail selection preserves the stable arrow');
+assert.deepEqual(directionalArrow('#f6b77b').points, unstableArrow, 'Changing the detail selection preserves the unstable arrow');
+$('show-all-variations').checked = false; fire('show-all-variations', 'change'); flush();
+assert.equal(directionalArrow('#77c9ef'), undefined, 'Single-arrow mode only draws the selected variation');
+assert.ok(directionalArrow('#f6b77b'));
+$('show-all-variations').checked = true; fire('show-all-variations', 'change'); flush();
+
+const stableStart = selectComparison(0);
+const stableDistance = Number($('actual-distance').textContent);
+const unstableStart = selectComparison(1);
+const unstableDistance = Number($('actual-distance').textContent);
+fire('timeline', 'input', 1); flush();
+assert.ok(Number($('actual-distance').textContent) > unstableDistance, 'The unstable comparison moves away from the moving base');
+assert.ok(Number($('approximation-error').textContent) < 1e-7);
+selectComparison(0);
+assert.ok(Number($('actual-distance').textContent) < stableDistance, 'The stable comparison approaches the moving base');
+assert.ok(Number($('approximation-error').textContent) < 1e-7);
+fire('initial-time', 'click'); flush();
+const previousBaseX = coordinates('base')[0];
+fire('base-0', 'input', previousBaseX + .4); flush();
+close(coordinates('comparison')[0], stableStart[0] + .4);
+close(selectComparison(1)[0], unstableStart[0] + .4);
+assert.equal(count(), 2, 'Editing the base reseeds the pair without adding trajectories');
+
+phaseClick(415, 260); flush();
+assert.equal(count(), 3, 'Clicking still adds a trajectory alongside the directional pair');
+const manualPoint = coordinates('comparison');
+const manualIndex = $('comparison-select').value;
+fire('parameter-a', 'input', .75); flush();
+assert.equal($('comparison-select').value, manualIndex);
+assert.deepEqual(coordinates('comparison'), manualPoint, 'Coefficient changes preserve click-added trajectories');
+selectComparison(0);
+fire('comparison-1', 'input', coordinates('comparison')[1] + .2); flush();
+const customStablePoint = coordinates('comparison');
+assert.match(comparisonLabels()[0], /\bCustom\b/i, 'An edited seed no longer claims to be the stable comparison');
+assert.doesNotMatch(comparisonLabels()[0], /\bStable\b/i);
+fire('base-0', 'input', previousBaseX + .8); flush();
+assert.deepEqual(coordinates('comparison'), customStablePoint, 'Reseeding never overwrites an edited initial condition');
+close(selectComparison(1)[0], unstableStart[0] + .8);
+assert.deepEqual(selectComparison(2), manualPoint);
+assert.equal(count(), 3);
+selectComparison(0); fire('remove-comparison', 'click'); flush();
+assert.equal(count(), 2);
+assert.match(comparisonLabels()[0], /\bUnstable\b/i, 'Removing a comparison preserves the remaining direction label');
+assert.deepEqual(selectComparison(1), manualPoint);
+fire('reset', 'click'); flush(); assertDirectionalPair();
+
+fire('preset', 'change', 'lorenz'); flush();
+assert.equal(count(), 1, 'The existing chaotic Lorenz preset retains its single comparison');
+assert.equal($('stable-legend').hidden, true);
+assert.equal($('unstable-legend').hidden, true);
+console.log('Passed: variational startup, initial displacement, signed coordinate edits, click placement, comparison lifecycle, playback, 3D placement and rotation, themes, guide, Back navigation, and stable/unstable directional comparison lifecycle.');

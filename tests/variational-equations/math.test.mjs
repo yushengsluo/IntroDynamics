@@ -115,4 +115,4 @@ for (const badParameters of [{}, {a: NaN, c: 1}, {a: -1, c: 1}, {a: 1, c: 5}]) a
 assert.throws(() => solveVariational(stable, stableParameters, stable.base, Array.from({length: 13}, () => [0, 0]), 0, 1), RangeError);
 assert.throws(() => sampleAt({samples: []}, 0), RangeError);
 assert.throws(() => sampleAt(spiralSolution, NaN), RangeError);
-console.log('Passed: preset Jacobians, tangent flow derivatives, exact linear solutions, signed interva
+console.log('Passed: preset Jacobians, tangent flow derivatives, exact linear solutions, signed intervals, adaptive integration, independent truncation, and input bounds.');

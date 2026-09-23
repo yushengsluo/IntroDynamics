@@ -217,4 +217,47 @@ $('reset').addEventListener('click',()=>applyPreset(state.preset.id));
 $('comparison-select').addEventListener('change',()=>{state.selected=Number($('comparison-select').value);renderComparison();schedule();});
 $('add-comparison').addEventListener('click',()=>{const point=[...state.base];point[0]+=.05;addComparison(point);});
 $('remove-comparison').addEventListener('click',()=>{if(state.comparisons.length<=1)return;state.comparisons.splice(state.selected,1);state.comparisonMeta.splice(state.selected,1);state.selected=Math.min(state.selected,state.comparisons.length-1);renderComparison();$('placement-status').textContent='Selected comparison removed.';schedule(true);});
-$('time-start').addEventListener('input',changeTimeRange);$('time-end').addEventListener('i
+$('time-start').addEventListener('input',changeTimeRange);$('time-end').addEventListener('input',changeTimeRange);
+$('play').addEventListener('click',()=>{if(state.time>=state.end)state.time=state.start;setPlaying(!state.playing);});
+$('restart').addEventListener('click',()=>{state.time=state.start;setPlaying(false);});
+$('initial-time').addEventListener('click',()=>{state.time=0;setPlaying(false);});
+$('timeline').addEventListener('input',()=>{state.time=Math.min(state.end,Math.max(state.start,Number($('timeline').value)));lastStamp=null;schedule();});
+$('speed').addEventListener('change',()=>{state.speed=Number($('speed').value);});
+for(const id of ['show-field','show-paths','show-prediction','show-separation'])$(id).addEventListener('change',()=>schedule());
+$('show-all-variations').addEventListener('change',()=>{updateDirectionPresentation();schedule();});
+$('zoom-in').addEventListener('click',()=>zoom(1/1.25));$('zoom-out').addEventListener('click',()=>zoom(1.25));
+$('reset-view').addEventListener('click',()=>{state.range=state.preset.range;state.yaw=-.65;state.pitch=.4;schedule();});
+$('slice-axis').addEventListener('change',()=>{state.sliceAxis=Number($('slice-axis').value);$('slice-label').textContent=['x₁ =','x₂ =','x₃ ='][state.sliceAxis];schedule();});
+$('slice-value').addEventListener('input',()=>{const value=Number($('slice-value').value),valid=$('slice-value').value.trim()!==''&&Number.isFinite(value)&&Math.abs(value)<=1000;$('slice-value').setAttribute('aria-invalid',String(!valid));if(valid){state.sliceValue=value;showInputError();schedule();}else $('input-error').textContent='Placement coordinate must be between −1000 and 1000.';});
+let pointer=null;
+const phase=$('phase-canvas');
+phase.addEventListener('pointerdown',event=>{if(event.button!==0)return;pointer={id:event.pointerId,x:event.clientX,y:event.clientY,lastX:event.clientX,lastY:event.clientY,dragged:false};phase.setPointerCapture(event.pointerId);});
+phase.addEventListener('pointermove',event=>{
+ if(!pointer||pointer.id!==event.pointerId)return;
+ if(Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y)>5)pointer.dragged=true;
+ if(pointer.dragged&&state.dimension===3){state.yaw+=(event.clientX-pointer.lastX)*.008;state.pitch=Math.max(-1.45,Math.min(1.45,state.pitch+(event.clientY-pointer.lastY)*.008));schedule();}
+ pointer.lastX=event.clientX;pointer.lastY=event.clientY;
+});
+phase.addEventListener('pointerup',event=>{
+ if(!pointer||pointer.id!==event.pointerId)return;
+ const click=!pointer.dragged&&Math.hypot(event.clientX-pointer.x,event.clientY-pointer.y)<=5;pointer=null;
+ if(phase.hasPointerCapture(event.pointerId))phase.releasePointerCapture(event.pointerId);
+ if(!click)return;
+ if($('slice-value').getAttribute('aria-invalid')==='true'&&state.dimension===3){$('placement-status').textContent='Complete the placement-plane coordinate before adding a point.';return;}
+ const rect=phase.getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top;
+ if(x<0||y<0||x>rect.width||y>rect.height)return;
+ const point=pickPoint(x,y,rect.width,rect.height,options(null));
+ if(point)addComparison(point);else $('placement-status').textContent='This placement plane is edge-on. Rotate the view or choose another plane.';
+});
+phase.addEventListener('pointercancel',()=>{pointer=null;});phase.addEventListener('lostpointercapture',()=>{pointer=null;});
+phase.addEventListener('wheel',event=>{event.preventDefault();zoom(Math.exp(Math.max(-.3,Math.min(.3,event.deltaY*.001))));},{passive:false});
+phase.addEventListener('keydown',event=>{
+ if(['+','=','-','_'].includes(event.key)){event.preventDefault();zoom(['+','='].includes(event.key)?1/1.25:1.25);}
+ else if(state.dimension===3&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();if(event.key==='ArrowLeft')state.yaw-=.1;if(event.key==='ArrowRight')state.yaw+=.1;if(event.key==='ArrowUp')state.pitch=Math.max(-1.45,state.pitch-.1);if(event.key==='ArrowDown')state.pitch=Math.min(1.45,state.pitch+.1);schedule();}
+});
+$('guide-button').addEventListener('click',()=>$('guide').showModal());
+$('guide').addEventListener('click',event=>{if(event.target!==$('guide'))return;const rect=$('guide').getBoundingClientRect();if(event.clientX<rect.left||event.clientX>rect.right||event.clientY<rect.top||event.clientY>rect.bottom)$('guide').close();});
+window.addEventListener('themechange',()=>{updateDirectionPresentation();schedule();});window.addEventListener('resize',()=>schedule());
+document.addEventListener('visibilitychange',()=>{lastStamp=null;});
+new ResizeObserver(()=>schedule()).observe(document.querySelector('main'));
+applyPreset('pendulum');

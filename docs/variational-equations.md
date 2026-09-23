@@ -33,4 +33,20 @@ Choose the system dimension, then a preset. Coefficients, the base initial condi
 
 Under **3D system → Stable and unstable directions**, choose:
 
-- **Hyperbolic flow in 3D:** x′ = ax, y′ = −by, z′ = −cz, with a, b, c > 0. A moving base trajectory is accompanied by a blue comparison offset in the stable yz plane and an orange comparison offset along the unstable x-axis. Both displacements solve the variational equation exactly and are drawn sim
+- **Hyperbolic flow in 3D:** x′ = ax, y′ = −by, z′ = −cz, with a, b, c > 0. A moving base trajectory is accompanied by a blue comparison offset in the stable yz plane and an orange comparison offset along the unstable x-axis. Both displacements solve the variational equation exactly and are drawn simultaneously.
+
+The hyperbolic example starts with **All variational arrows** enabled. Blue and orange remain fixed across selection and theme changes. Selecting a comparison changes the detail chart without hiding either direction. Coefficient and supported base-point edits regenerate untouched directional seeds in place, preserving extra custom comparisons. Editing a comparison makes it custom. **Reset example** restores the initial pair.
+
+Click the phase portrait to add a comparison. In 3D, choose a coordinate plane and its fixed coordinate first. Drag to rotate, scroll or use the zoom buttons to zoom, and use arrow keys for keyboard rotation. Edge-on planes cannot receive unambiguous click placements; rotate or select a different plane. All coordinate values are limited to ±1000.
+
+Time intervals can lie within −50…100, with initial conditions anchored at t = 0 even for positive-only or negative-only intervals. Playback stops at the interval end. The **t = 0** button is available when zero lies inside the interval. Theme changes, view changes, and selecting a comparison preserve the simulation time.
+
+## Numerical methods and limits
+
+`models.js` defines each field and its analytic Jacobian. `solver.js` uses adaptive RK4 with step doubling; the maximum integration step is 0.015. The base and its variational vectors are integrated together. Comparison solutions are integrated independently so an escaping comparison does not discard a bounded base or other comparisons. At most 2001 output samples are stored, with linear interpolation for animation.
+
+States and derivative components beyond 10⁸, nonfinite values, a minimum-step failure, or the integration step budget stop the affected branch. Variational truncation leaves the base available. Warnings explain unavailable parts of the interval. Long chaotic trajectories are qualitative numerical illustrations; interpolation and floating-point error limit quantitative predictability.
+
+The arrow always represents the true computed variational displacement, without normalizing or enlarging it. It may be too small to distinguish or extend beyond the viewport. The separation chart uses a logarithmic vertical scale; zero values are displayed at its lower boundary. Three-dimensional views use an orthographic projection, so vectors pointing toward the camera can appear short.
+
+`render.js` handles projection, click placement, trajectory and arrow rendering, and the separation plot. `app.js` handles editing, playback, selection, and view controls. `boot.js` selects the ES module entry point over HTTP and `app.bundle.js` for direct local-file opening.

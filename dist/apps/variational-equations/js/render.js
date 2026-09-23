@@ -443,4 +443,63 @@ export function drawGrowth(canvas, options = {}) {
   const x = t => area.left + (t - start) / (end - start) * (area.right - area.left);
   const y = value => area.bottom - (Math.max(logMin, Math.log10(Math.max(value, Math.pow(10, logMin)))) - logMin) / (logMax - logMin) * (area.bottom - area.top);
   context.font = '10px system-ui, sans-serif';
-  context.fillStyle = colors.te
+  context.fillStyle = colors.text;
+  context.strokeStyle = colors.grid;
+  context.lineWidth = 1;
+  const logStep = Math.max(1, Math.ceil((logMax - logMin) / 5));
+  for (let exponent = logMin; exponent <= logMax; exponent += logStep) {
+    const position = y(Math.pow(10, exponent));
+    line(context, [area.left, position], [area.right, position], width, height);
+    context.textAlign = 'right';
+    context.fillText(exponent === 0 ? '1' : `10${superscript(exponent)}`, area.left - 9, position + 3);
+  }
+  const timeStep = gridStep(end - start, Math.max(3, Math.floor((width - 70) / 65)));
+  for (let n = Math.ceil(start / timeStep); n <= Math.floor(end / timeStep); n += 1) {
+    const t = n * timeStep;
+    const position = x(t);
+    line(context, [position, area.top], [position, area.bottom], width, height);
+    context.textAlign = 'center';
+    context.fillText(label(t), position, area.bottom + 17);
+  }
+  context.textAlign = 'right';
+  context.fillText('t', area.right, height - 5);
+  context.textAlign = 'left';
+  context.fillText('distance · log scale', area.left, 10);
+  context.save();
+  context.beginPath();
+  context.rect(area.left, area.top, area.right - area.left, area.bottom - area.top);
+  context.clip();
+  const selectedDirection = directionalColor(colors, options.comparisonKinds?.[selected]);
+  const seriesColors = [selectedDirection || colors.comparisons[0], selectedDirection || colors.vector, colors.text];
+  for (let series = 0; series < 3; series += 1) {
+    context.strokeStyle = seriesColors[series];
+    context.lineWidth = series === 2 ? 1.3 : 1.8;
+    context.setLineDash(series === 1 ? [5, 3] : []);
+    context.beginPath();
+    let drawing = false;
+    samples.forEach((sample, index) => {
+      const value = values[index][series];
+      if (value === null) { drawing = false; return; }
+      if (drawing) context.lineTo(x(sample.t), y(value));
+      else context.moveTo(x(sample.t), y(value));
+      drawing = true;
+    });
+    context.stroke();
+  }
+  context.setLineDash([]);
+  if (Number.isFinite(options.frame?.t)) {
+    const position = x(options.frame.t);
+    context.strokeStyle = colors.axis;
+    context.lineWidth = 1;
+    line(context, [position, area.top], [position, area.bottom], width, height);
+    metrics(options.frame, selected).forEach((value, series) => {
+      if (value !== null) dot(context, [position, y(value)], 3.5, seriesColors[series], colors.background, false, width, height);
+    });
+  }
+  context.restore();
+}
+
+function superscript(value) {
+  const digits = { '-': '⁻', 0: '⁰', 1: '¹', 2: '²', 3: '³', 4: '⁴', 5: '⁵', 6: '⁶', 7: '⁷', 8: '⁸', 9: '⁹' };
+  return String(value).split('').map(digit => digits[digit]).join('');
+}
