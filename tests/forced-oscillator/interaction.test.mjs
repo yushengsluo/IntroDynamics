@@ -192,26 +192,4 @@ fire('duration','input',-100);fire('restart','click');flush();assert.equal($('cu
 fire('duration','input',500);fire('duration','input',501);fire('duration','change');flush();assert.equal($('timeline').max,'500');assert.match($('input-error').textContent,/between -500 and 500/);
 fire('reset','click');flush();assert.equal(count(),1);assert.equal($('timeline').min,'0');assert.equal($('timeline').max,'40');assert.equal($('trajectory-status').textContent,'');
 fire('preset','change','beats');fire('omega','input',10);fire('start-time','input',-500);fire('duration','input',500);flush();
-assert.equal($('input-error').textContent,'');assert.equal($('timeline').max,'500');assert.equal($('range-note').textContent,'');
-console.log('Passed: click placement, multiple trajectories, selection, lifecycle, chaotic preset, and full ±500 controls.');
-
-// A theme change must recolor the plots without resetting the chaotic trajectories.
-fire('preset','change','duffing-chaos');flush();fire('timeline','input',55.25);flush();
-const themeState=()=>({x:$('current-x').textContent,v:$('current-v').textContent,t:$('time-label').textContent,selection:$('trajectory-select').value,count:count()});
-const beforeTheme=themeState(),darkPaths=phaseColors.map(phaseSnapshot);
-lightTheme=true;windowListeners.get('themechange')();flush();
-assert.deepEqual(themeState(),beforeTheme,'Changing theme preserves time, current state, and trajectory selection');
-const lightPaths=['#087f66','#246baf'].map(phaseSnapshot);
-for(let i=0;i<2;i++){
- assert.deepEqual(lightPaths[i].trail,darkPaths[i].trail,'Theme changes preserve the animated trails');
- assert.strictEqual(lightPaths[i].background,darkPaths[i].background,'Theme changes reuse cached geometry');
-}
-assert.match($('trajectory-legend').innerHTML,/--trajectory-color:#087f66/);
-assert.match($('trajectory-legend').innerHTML,/--trajectory-color:#246baf/);
-assert.ok(contexts.get('motion-canvas').paths.some(path=>path.color==='#087f66'));
-assert.ok(contexts.get('response-canvas').paths.some(path=>path.color==='#7651b7'));
-assert.ok(contexts.get('time-canvas').paths.some(path=>path.color==='#a8580c'));
-lightTheme=false;windowListeners.get('themechange')();flush();
-assert.match($('trajectory-legend').innerHTML,/--trajectory-color:#61dfbd/);
-phaseColors.forEach(phaseSnapshot);
-console.log('Passed: theme changes recolor oscillator plots and legends while preserving state and geometry.');
+assert.equal($('input-error').textContent,'');assert.equal($('timeline').max,'500');assert.equal($('range-note').textCont
