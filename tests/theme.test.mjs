@@ -3,6 +3,15 @@ import fs from 'node:fs';
 import vm from 'node:vm';
 
 const source=fs.readFileSync(new URL('../dist/assets/js/theme.js',import.meta.url),'utf8');
+const home=fs.readFileSync(new URL('../dist/index.html',import.meta.url),'utf8');
+const previewAssets=[...home.matchAll(/<img\s+src="([^"]+)"\s+data-dark-src="([^"]+)"\s+data-light-src="([^"]+)"/g)];
+assert.ok(previewAssets.some(([,src])=>src==='assets/images/bifurcations-2d.svg'),'Bifurcations has a themed main-page preview');
+for(const [, ,dark,light] of previewAssets){
+ for(const path of [dark,light]){
+  const asset=fs.readFileSync(new URL(`../dist/${path}`,import.meta.url),'utf8');
+  assert.match(asset,/<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/,'Each themed preview is a local SVG');
+ }
+}
 const storageKey='dynamics-theme';
 
 function boot({dark=false,storage=new Map(),failStorage=false,mediaSupported=true}={}){
@@ -13,8 +22,8 @@ function boot({dark=false,storage=new Map(),failStorage=false,mediaSupported=tru
   querySelector(selector){return selector==='[data-theme-icon]'?icon:null;},
   addEventListener(type,listener){this.listeners.set(type,listener);}
  };
- const previews=['linear-flows','forced-oscillator'].map(name=>({
-  attributes:{src:name+'.svg','data-dark-src':name+'.svg','data-light-src':name+'-light.svg'},
+ const previews=previewAssets.map(([,src,dark,light])=>({
+  attributes:{src,'data-dark-src':dark,'data-light-src':light},
   getAttribute(name){return this.attributes[name]??null;},
   setAttribute(name,value){this.attributes[name]=value;}
  }));

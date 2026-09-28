@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>2D bifurcations — Interactive illustrations</title>
+  <meta name="description" content="Explore nullclines, equilibria, saddle connections, a homoclinic loop, and a heteroclinic bifurcation in a planar quadratic differential equation.">
+  <script src="../../assets/js/theme.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="../../assets/css/app-shell.css">
+  <link rel="stylesheet" href="../../assets/css/theme.css">
+</head>
+<body>
+  <header class="app-header">
+    <a class="back-link" href="../../index.html"><span aria-hidden="true">←</span> Back</a>
+    <div class="app-identity"><span class="app-mark" aria-hidden="true">⋈</span><strong class="app-name">2D bifurcations</strong></div>
+    <div class="header-tools"><button id="guide-button" class="quiet-button" aria-haspopup="dialog" aria-controls="guide"><span aria-hidden="true">ⓘ</span> How to explore</button><button type="button" class="theme-toggle" data-theme-toggle aria-label="Switch color mode"><span data-theme-icon aria-hidden="true">☀</span></button></div>
+  </header>
+  <div class="workspace">
+    <aside class="controls" aria-label="Parameter and display controls">
+      <p class="eyebrow">A QUADRATIC FAMILY</p>
+      <div class="equations" aria-label="System equations"><div>x′ = x² − y² + 1</div><div>y′ = y − x² − a</div></div>
+      <div class="parameter-heading"><label for="parameter">Parameter <i>a</i></label><input id="parameter" type="number" min="-3" max="1.2" step="any" value="-1.5134373738064193"></div>
+      <input id="parameter-slider" class="parameter-slider" type="range" min="-3" max="1.2" step="0.0001" value="-1.5134" aria-label="Parameter a slider">
+      <div class="range-labels"><span>−3</span><span>1.2</span></div>
+      <p class="hint">Drag the slider or the diagram to change the phase portrait continuously.</p>
+      <section class="control-section">
+        <h2>Jump to a bifurcation</h2>
+        <div id="event-buttons" class="event-buttons"></div>
+        <div class="compare-actions" role="group" aria-label="Compare around the selected bifurcation"><button id="before" class="secondary-button">Before</button><button id="at-event" class="secondary-button">At value</button><button id="after" class="secondary-button">After</button></div>
+        <label class="offset-control" for="offset">Comparison offset δ<input id="offset" type="number" min="0.000001" max="0.2" step="any" value="0.01"></label>
+      </section>
+      <section class="control-section view-options">
+        <h2>Display</h2>
+        <label><input id="show-field" type="checkbox" checked> Vector field</label>
+        <label><input id="show-nullclines" type="checkbox" checked> Nullclines</label>
+        <label><input id="show-separatrices" type="checkbox" checked> Stable &amp; unstable branches</label>
+        <label><input id="show-trajectories" type="checkbox" checked> Added trajectories</label>
+      </section>
+      <section class="control-section">
+        <h2>Add a trajectory <span id="trajectory-count" class="count">0 / 12</span></h2>
+        <p class="hint">Click the portrait, or enter an initial point. Points stay fixed as a changes.</p>
+        <div class="coordinate-fields"><label for="initial-x">x(0)<input id="initial-x" type="number" step="any" value="-1"></label><label for="initial-y">y(0)<input id="initial-y" type="number" step="any" value="1"></label></div>
+        <div class="trajectory-actions"><button id="add-trajectory" class="secondary-button">+ Add point</button><button id="clear-trajectories" class="secondary-button">Clear points</button></div>
+        <label class="offset-control" for="duration">Trace time in each direction<input id="duration" type="number" min="1" max="100" step="1" value="25"></label>
+      </section>
+      <p id="input-error" class="error" role="status"></p>
+      <button id="reset" class="secondary-button reset-button">Reset illustration</button>
+    </aside>
+    <main>
+      <div class="page-heading"><div><p class="eyebrow">WHEN THE PHASE PORTRAIT CHANGES</p><h1>Connections &amp; bifurcations</h1></div><span id="equilibrium-count" class="badge">4 equilibria</span></div>
+      <p class="intro">Move one parameter to reconnect saddle branches, form a loop, and create or destroy equilibria. Nullcline intersections locate the fixed points.</p>
+      <section class="event-summary" aria-label="Current parameter behavior"><div class="summary-heading"><strong id="event-title">Heteroclinic connection</strong><output id="parameter-value">a ≈ −1.513437374</output></div><p id="event-description"></p><p id="event-detail" class="detail"></p></section>
+      <section class="panel portrait-panel" aria-labelledby="phase-heading">
+        <div class="panel-heading"><h2 id="phase-heading">Phase portrait &amp; nullclines</h2><div class="plot-actions"><button id="zoom-out" class="icon-button" aria-label="Zoom out" title="Zoom out">−</button><button id="zoom-in" class="icon-button" aria-label="Zoom in" title="Zoom in">+</button><button id="reset-view" class="icon-button" aria-label="Reset view" title="Reset view">⌖</button></div></div>
+        <canvas id="phase-canvas" tabindex="0" aria-label="Phase portrait. Click to add a trajectory, drag to pan, or use plus and minus to zoom." aria-describedby="phase-hint"></canvas>
+        <div class="plot-legend"><span class="x-nullcline">x′ = 0</span><span class="y-nullcline">y′ = 0</span><span class="stable-legend">Stable branch</span><span class="unstable-legend">Unstable branch</span><span class="connection-legend">Connection</span><span class="trajectory-legend">Your trajectories</span></div>
+        <p id="phase-hint" class="plot-note">Click to add a trajectory · drag to pan · scroll to zoom. Arrows show forward time. ◆ saddle · ● attracting · ○ repelling.</p>
+        <p id="placement-status" class="plot-note status" role="status"></p>
+      </section>
+      <section class="panel diagram-panel" aria-labelledby="diagram-heading">
+        <div class="panel-heading"><h2 id="diagram-heading">Equilibria as a varies</h2><span class="subtle">Click or drag to choose a</span></div>
+        <canvas id="bifurcation-canvas" tabindex="0" role="slider" aria-label="Bifurcation parameter a" aria-valuemin="-3" aria-valuemax="1.2" aria-valuenow="-1.5134373738"></canvas>
+        <p class="plot-note">Each curve gives the x-coordinate of an equilibrium. Solid green: attracting; dashed: saddle or repelling. HeC: heteroclinic · HC: homoclinic · H: Hopf · SN: saddle-node. Global connections do not change the equilibrium count.</p>
+      </section>
+      <div class="bottom-panels">
+        <section class="panel equilibria-panel" aria-labelledby="equilibria-heading"><div class="panel-heading"><h2 id="equilibria-heading">Fixed points</h2><span class="subtle">J = [2x, −2y; −2x, 1]</span></div><div class="table-wrap"><table><thead><tr><th scope="col">(x, y)</th><th scope="col">Type</th><th scope="col">Eigenvalues</th></tr></thead><tbody id="equilibria-table"></tbody></table></div></section>
+        <section class="panel reading-panel" aria-labelledby="reading-heading"><div class="panel-heading"><h2 id="reading-heading">Reading the connections</h2></div><p>A <strong>heteroclinic orbit</strong> leaves one saddle and approaches another. A <strong>homoclinic orbit</strong> leaves and returns to the same saddle.</p><p>The blue stable branches approach a saddle in forward time; the orange unstable branches leave it. A connection is highlighted in pink at its critical parameter.</p><div class="nullcline-formulas"><span class="x-nullcline">x′ = 0: y = ±√(x² + 1)</span><span class="y-nullcline">y′ = 0: y = x² + a</span></div></section>
+      </div>
+      <p id="load-error" class="error" role="alert"></p>
+      <footer>Connections are limiting orbits: their endpoints are reached only as t → ±∞. The heteroclinic value has an exact algebraic formula; the homoclinic value is a numerical shooting estimate. Computed paths stop at the integration time or escape boundary.</footer>
+    </main>
+  </div>
+  <dialog id="guide" class="explore-guide" aria-labelledby="guide-title"><form method="dialog"><div class="guide-heading"><h2 id="guide-title">Explore planar bifurcations</h2><button class="guide-close" aria-label="Close guide">×</button></div><p>This family changes with a single parameter a. The portrait, nullclines, fixed points, and equilibrium diagram update together.</p><ul><li><strong>Start at a connection.</strong> Choose Heteroclinic or Homoclinic, then use Before and After to compare a ± δ. Change δ for a closer look. The heteroclinic joins two different saddles; the homoclinic loops back to one saddle.</li><li><strong>Read the nullclines.</strong> On the cool gray curves x′ = 0, so the field is vertical. On the warm gray parabola y′ = 0, so it is horizontal. Intersections are equilibria.</li><li><strong>Follow the saddle branches.</strong> Blue branches approach a saddle, orange branches leave it. Arrow direction always means forward time, even though stable branches are computed backwards. Pink highlights a connection only at its critical value.</li><li><strong>Explore other transitions.</strong> Equilibria meet at a = −1 and a = 1. At the subcritical Hopf value a ≈ 0.868034, the upper-left equilibrium loses stability. A small unstable periodic orbit exists just below this value.</li><li><strong>Add initial points.</strong> Click the phase portrait or use the coordinate fields. Added points stay in place as you vary a. Drag to pan, scroll to zoom, or use the view buttons. Both time directions are drawn.</li><li><strong>Use the diagram.</strong> Click or drag horizontally to set a. The arrow keys change a by 0.01; hold Shift for 0.001. The equilibrium curves show x versus a, not the extent of periodic orbits.</li></ul><p>The homoclinic value is found by matching the saddle’s stable and unstable branches on a transverse section. Its displayed loop joins these two computed halves to avoid long-time numerical drift. The exact heteroclinic line is y = mx − 1/(2m), where m³ − m − 1 = 0 and a = −m − 1/(4m).</p><button class="primary-button">Got it</button></form></dialog>
+  <script src="js/boot.js" defer></script>
+</body>
+</html>

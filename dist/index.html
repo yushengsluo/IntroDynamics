@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Intro to nonlinear dynamics and chaos</title>
-  <meta name="description" content="Interactive illustrations of linear flows, harmonic and Duffing oscillators, and variational equations. Explore phase portraits, nearby trajectories, resonance, and nonlinear motion.">
+  <meta name="description" content="Interactive illustrations of linear flows, harmonic and Duffing oscillators, variational equations, and 2D bifurcations. Explore phase portraits, nearby trajectories, nullclines, and saddle connections.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='10' fill='%230e1b2b'/%3E%3Cpath d='M28 9H12l10 11-10 11h16' fill='none' stroke='%2361dfbd' stroke-width='3' stroke-linejoin='round'/%3E%3C/svg%3E">
   <script src="assets/js/theme.js"></script>
   <link rel="stylesheet" href="assets/css/examples.css">
@@ -62,6 +62,21 @@
             <p id="variational-summary" class="description">Follow a moving variational vector and compare its prediction with nearby solutions, from linear flows to chaotic systems.</p>
             <div class="topics"><span>2D &amp; 3D</span><span>Linearization</span><span>Sensitivity</span></div>
             <span class="open-link">Open variational equations <span aria-hidden="true">→</span></span>
+          </div>
+        </a>
+      </li>
+      <li>
+        <a class="example-card" href="apps/bifurcations-2d/index.html" aria-labelledby="bifurcations-title" aria-describedby="bifurcations-summary">
+          <div class="example-preview" aria-hidden="true">
+            <img src="assets/images/bifurcations-2d.svg" data-dark-src="assets/images/bifurcations-2d.svg" data-light-src="assets/images/bifurcations-2d-light.svg" width="400" height="300" alt="">
+            <span class="equation">x′ = x² − y² + 1<br>y′ = y − x² − a</span>
+          </div>
+          <div class="example-content">
+            <p class="category">Changing a parameter</p>
+            <h3 id="bifurcations-title">Bifurcations in 2D</h3>
+            <p id="bifurcations-summary" class="description">Move through a family of nonlinear systems and watch nullclines, equilibria, and saddle connections change at critical parameter values.</p>
+            <div class="topics"><span>Nullclines</span><span>Homoclinic loops</span><span>Heteroclinic orbits</span></div>
+            <span class="open-link">Open 2D bifurcations <span aria-hidden="true">→</span></span>
           </div>
         </a>
       </li>
